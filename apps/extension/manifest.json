@@ -1,0 +1,59 @@
+{
+  "manifest_version": 3,
+  "name": "Browser-Native Studio Executor",
+  "version": "0.2.1",
+  "description": "Safe browser automation executor for Browser-Native AI Video Studio.",
+  "permissions": ["activeTab", "tabs", "scripting", "downloads", "storage", "alarms", "debugger"],
+  "host_permissions": [
+    "https://chatgpt.com/*",
+    "https://chat.openai.com/*",
+    "https://labs.google/*",
+    "https://labs.google.com/*",
+    "https://flow.google.com/*",
+    "*://flow-content.google/*",
+    "https://grok.com/*",
+    "https://x.com/i/grok*",
+    "https://www.freepik.com/*",
+    "https://elevenlabs.io/*",
+    "https://api.us.elevenlabs.io/*",
+    "http://127.0.0.1:9222/*",
+    "http://127.0.0.1:3767/*",
+    "http://127.0.0.1:3768/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://chatgpt.com/*", "https://chat.openai.com/*"],
+      "js": ["content/chatgpt.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://labs.google/*", "https://labs.google.com/*", "https://flow.google.com/*"],
+      "js": ["content/flow-slate-bridge.js"],
+      "run_at": "document_idle",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["https://labs.google/*", "https://labs.google.com/*", "https://flow.google.com/*"],
+      "js": ["content/google-flow.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://grok.com/*", "https://x.com/i/grok*"],
+      "js": ["content/grok.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://elevenlabs.io/app/flows/*"],
+      "js": ["content/elevenlabs-flows.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_title": "Browser-Native Studio Executor",
+    "default_popup": "popup.html"
+  }
+}

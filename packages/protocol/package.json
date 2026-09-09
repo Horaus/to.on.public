@@ -1,0 +1,16 @@
+{
+  "name": "@studio/protocol",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./job-request": "./src/job-request.ts",
+    "./bridge-messages": "./src/bridge-messages.ts",
+    "./connection-v2": "./src/connection-v2.cjs",
+    "./binary-handle": "./src/binary-handle.cjs"
+  },
+  "dependencies": {
+    "@studio/types": "workspace:*"
+  }
+}

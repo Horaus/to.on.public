@@ -1,0 +1,86 @@
+{
+  "name": "browser-native-ai-video-studio",
+  "version": "0.2.1",
+  "private": true,
+  "packageManager": "pnpm@11.5.2",
+  "description": "Desktop-first AI video production studio with browser-native automation providers.",
+  "main": "apps/desktop/src/main/main.cjs",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:app": "node scripts/dev.mjs --app-only",
+    "dev:web": "vite --config apps/desktop/vite.config.ts --host 127.0.0.1",
+    "build": "pnpm build:desktop && pnpm build:extension",
+    "package:mac": "pnpm build && electron-builder --mac dir zip dmg",
+    "build:desktop": "tsc -p tsconfig.json && vite build --config apps/desktop/vite.config.ts && node scripts/copy-ffmpeg-binaries.mjs",
+    "build:extension": "pnpm --filter extension build",
+    "preview": "vite preview --config apps/desktop/vite.config.ts --host 127.0.0.1",
+    "test:e2e": "playwright test",
+    "test:unit": "node --experimental-strip-types --test apps/desktop/src/tests/*.test.cjs apps/extension/src/tests/*.test.cjs packages/domain/src/tests/*.test.cjs packages/protocol/src/tests/*.test.cjs packages/renderer/src/tests/*.test.cjs",
+    "verify:persistence": "node scripts/verify-persistence.mjs",
+    "verify:export-runtime": "node scripts/verify-export-runtime.mjs",
+    "verify:window-modes": "node scripts/verify-window-modes-runtime.mjs",
+    "verify:media-playback": "node scripts/verify-media-playback-runtime.mjs",
+    "verify:idle-performance": "node scripts/verify-idle-performance.mjs",
+    "verify:extension-package": "node scripts/verify-extension-package.mjs",
+    "verify:extension-pairing": "VITE_STUDIO_BRIDGE_PORT=3769 pnpm build:extension && STUDIO_EXTENSION_SMOKE_PORT=3769 node scripts/verify-extension-pairing-runtime.mjs",
+    "verify:flow-live": "node scripts/verify-live-flow.mjs",
+    "verify:flow-autonomy": "node scripts/verify-autonomous-flow-evidence.mjs",
+    "verify:flow-serial": "node scripts/verify-flow-serial-gate.mjs",
+    "export:previsual-review": "node scripts/export-previsual-review.mjs",
+    "monitor:studio": "node scripts/monitor-studio-state.mjs",
+    "architecture:baseline": "SENTRUX_SKIP_GRAMMAR_DOWNLOAD=1 sentrux gate --save .",
+    "architecture:check": "SENTRUX_SKIP_GRAMMAR_DOWNLOAD=1 sentrux gate .",
+    "architecture:rules": "SENTRUX_SKIP_GRAMMAR_DOWNLOAD=1 sentrux check .",
+    "architecture:map": "node scripts/validate-architecture-map.cjs",
+    "typecheck": "pnpm typecheck:desktop && pnpm typecheck:extension",
+    "typecheck:desktop": "tsc -p tsconfig.json --noEmit",
+    "typecheck:extension": "pnpm --filter extension typecheck"
+  },
+  "dependencies": {
+    "@xyflow/react": "^12.11.2",
+    "ffmpeg-static": "5.3.0",
+    "ffprobe-static": "3.1.0",
+    "lucide-react": "^0.562.0",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.60.0",
+    "@types/chrome": "^0.0.280",
+    "@types/node": "^24.10.1",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "@types/ws": "^8.18.1",
+    "@vitejs/plugin-react": "^5.1.1",
+    "concurrently": "^10.0.3",
+    "electron": "^40.0.0",
+    "electron-builder": "26.0.12",
+    "playwright": "1.60.0",
+    "typescript": "^5.9.3",
+    "vite": "^8.0.16",
+    "wait-on": "^9.0.3"
+  },
+  "build": {
+    "appId": "com.horaus.browsernative.studio.v021",
+    "productName": "Browser Native Studio v0.2.1",
+    "asar": true,
+    "files": [
+      "package.json",
+      "dist/renderer/**/*",
+      "apps/desktop/src/main/**/*",
+      "apps/desktop/src/db/**/*",
+      "packages/skills/**/*",
+      "scripts/*.swift",
+      "node_modules/**/*"
+    ],
+    "mac": {
+      "target": ["dir", "zip", "dmg"],
+      "category": "public.app-category.video"
+    },
+    "directories": {
+      "output": "release-artifacts/v0.2.1"
+    }
+  }
+}

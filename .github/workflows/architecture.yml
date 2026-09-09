@@ -1,0 +1,34 @@
+name: Architecture guard
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  sentrux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pinned Sentrux
+        run: |
+          curl --fail --location --retry 3 \
+            https://github.com/sentrux/sentrux/releases/download/v0.5.7/sentrux-linux-x86_64 \
+            --output /tmp/sentrux
+          chmod +x /tmp/sentrux
+          sudo mv /tmp/sentrux /usr/local/bin/sentrux
+          sentrux --version
+
+      - name: Install language sensors
+        run: sentrux plugin add-standard
+
+      - name: Reject structural regression
+        run: pnpm architecture:check
+
+      - name: Enforce explicit architecture rules
+        run: pnpm architecture:rules

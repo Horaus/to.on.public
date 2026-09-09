@@ -1,0 +1,17 @@
+{
+  "version": "0.2.1",
+  "commit": "c21c2c3b9fb2bfc28891d1abb6d1797ef0223b30",
+  "unsigned": true,
+  "liveGate": "passed_preview_applet_import",
+  "channel": "public-preview",
+  "artifacts": [
+    "Browser Native Studio v0.2.1-0.2.1.dmg",
+    "Browser Native Studio v0.2.1-0.2.1-mac.zip",
+    "browser-native-studio-extension-v0.2.1.zip"
+  ],
+  "extensionArtifact": {
+    "bytes": 468645,
+    "sha256": "18e621a453dff72469d212ca2ed7ff79d24f714c61e8a8a77f3cafd2226ea753",
+    "payloadCheck": "passed_required_content_scripts"
+  }
+}

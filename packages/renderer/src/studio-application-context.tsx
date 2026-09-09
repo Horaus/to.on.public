@@ -1,0 +1,353 @@
+import { createContext, useContext } from "react";
+
+export const StudioApplicationContext = createContext<StudioApplicationModel | null>(null);
+
+export function useStudioApplication(): StudioApplicationModel {
+  const value = useContext(StudioApplicationContext);
+  if (!value) throw new Error("StudioApplicationContext is unavailable");
+  return value;
+}
+
+export const useStudioApplicationContext = useStudioApplication;
+
+import type { Asset, AutomationJob, BrowserProviderAdapter, Character, ProductionGraphCustomNode, ProductionGraphNodeSettings, ProductionGraphRevision, Project, ProjectIntake, Scene, Shot, StoryCharacter, StudioState, VideoEditorialReview, VisualReference } from "@studio/types";
+import type { LucideIcon } from "lucide-react";
+import type React from "react";
+
+type PipelineStepId = "setup" | "foundation" | "architecture" | "screenplay" | "shots" | "character" | "prompts" | "storyboard" | "video" | "review";
+type VideoAspectRatio = "9:16" | "16:9" | "4:3" | "3:4" | "1:1";
+type StudioView = "overview" | "flow" | "story" | "assets" | "storyboard" | "generate" | "review" | "source";
+type StoryDocument = NonNullable<Project["storyDocument"]>;
+type DraftUpload = { file: File; dataUrl: string };
+type PipelineStepItem = { id: PipelineStepId; label: string; view: StudioView; ready: boolean };
+type PendingStoryboardQueue = { sequenceId: string; projectId: string; providerId: string; sessionKey: string; items: Array<{ scene: Scene; shot: Shot; sourceAssetId?: string }>; nextIndex: number; previousJobId?: string; repairAspectRatio?: VideoAspectRatio; mode?: "scene_frames" | "shot_keyframes" };
+type BridgeStatus = { connectedExtensions: number; openSocketCount?: number; expectedVersion: string; versions: string[]; updateRequired: boolean; identifying: boolean; connections?: Array<{ extensionId?: string; extensionInstanceId?: string; pairing?: { pairingId?: string; extensionInstanceId?: string; code?: string; state?: string; expiresAt?: number }; capabilities?: { manifestVersion?: string; protocolVersions?: number[]; [key: string]: unknown }; providerVisibility?: { googleFlowProjectTabs?: number; googleFlowRuntimeToolTabs?: number; googleFlowEditorToolTabs?: number; [key: string]: unknown } }> };
+type FlowDocument =
+  | { id: string; kind: "brief" | "story" | "scene-breakdown" | "scene" | "shot" | "note" | "reference-note"; title: string; text: string; entityId: string }
+  | { id: string; kind: "scene-continuity"; title: string; text: string; entityId: string; scene: Scene; previousScene?: Scene; requirements: StoryDocument["visualRequirements"]; matchedReferences: VisualReference[] }
+  | { id: string; kind: "profile"; title: string; entityId: string; intake: ProjectIntake; providers: BrowserProviderAdapter[] }
+  | { id: string; kind: "upload-image"; title: string; entityId: string; dataUrl?: string; fileName?: string; mimeType?: string }
+  | { id: string; kind: "custom-upload" | "image-generator"; title: string; entityId: string; text?: string; dataUrl?: string; fileName?: string; mimeType?: string; customNode: ProductionGraphCustomNode; job?: AutomationJob; generatedAsset?: Asset }
+  | { id: string; kind: "image" | "video"; title: string; asset: Asset };
+type CanvasDocument = FlowDocument & { groupId: string; providerId?: string; providerName?: string; aspectRatio?: string; durationSec?: number; resolution?: string; prompt?: string; category?: "characters" | "locations" | "props" | "style"; assetSubgroup?: "main" | "supporting"; mediaRole?: "reference" | "generated" | "input"; parentDocumentId?: string; sceneDocumentId?: string; row?: number; slot?: "scene" | "screenplay" | "shot" | "scene-keyframe" | "scene-continuity" | "keyframe" | "provider-compile" | "video"; versions?: Asset[]; referenceRequirementIds?: string[]; customKind?: ProductionGraphCustomNode["kind"]; inheritedAspectRatio?: VideoAspectRatio; hasAspectRatioOverride?: boolean; fitContent?: boolean; canRun?: boolean; activeJob?: AutomationJob; inheritedProviderId?: string; outputLanguage?: string; inheritedOutputLanguage?: string; videoQuality?: "fast" | "quality"; generateAudio?: boolean; nativeAudioWarning?: string; estimatedCredits?: { min: number; max: number }; providers?: BrowserProviderAdapter[] };
+
+export type StudioApplicationModel = {
+    actionNeededJobs: AutomationJob[];
+    activeJobs: AutomationJob[];
+    activeView: StudioView;
+    addProductionGraphNode: (kind: ProductionGraphCustomNode["kind"]) => void;
+    appManagerOpen: boolean;
+    appManagerTab: "settings" | "projects" | "account";
+    applyPlanner: () => void;
+    approvedShotCount: number;
+    bridgeCount: number;
+    bridgeStatus: BridgeStatus;
+    bridgeVersionLabel: string;
+    refreshBridgeStatus: () => Promise<BridgeStatus | undefined>;
+    cancelCurrentProjectAutomation: (message?: string) => void;
+    candidateCarouselIndex: Record<string, number>;
+    candidateEdit: Record<string, string>;
+    character: Character;
+    characterGeneratedAssets: Asset[];
+    characterImageJobsActive: AutomationJob[];
+    chooseStoryCharacter: (slot: string) => void;
+    clearCharacterProfile: () => void;
+    clearDraftUpload: (kind: "primary" | "detail") => void;
+    confirmGeneratedAssetAsReference: (asset: Asset) => Promise<void>;
+    confirmReferenceCandidate: (candidateId: string) => Promise<void>;
+    connectionJob: AutomationJob | undefined;
+    connectionJobActive: boolean;
+    contentLanguage: string;
+    contentLanguageMismatch: boolean;
+    createProject: () => Promise<void>;
+    deleteProductionGraphNode: (nodeId: string) => void;
+    detailUploadInputRef: React.RefObject<HTMLInputElement | null>;
+    editInsertAfterShotId: string | undefined;
+    editInsertBrief: string;
+    editInsertKind: "shot" | "scene" | "transition";
+    editSequenceModel: import("@studio/types").EditSequence;
+    flowFocusTarget: "source" | "profile" | "references" | null;
+    generateCharacterProfileDraft: () => void;
+    generateProductionGraphImage: (node: ProductionGraphCustomNode) => Promise<void>;
+    generateProductionGraphRevision: (document: CanvasDocument, instruction: string) => Promise<void>;
+    generatePrompt: () => void;
+    promoteReferenceToShot: (shot: Shot) => Promise<void>;
+    generatedCandidateGroups: {
+        key: string;
+        name: string;
+        slot: string;
+        role: VisualReference["role"];
+        referenceUse: VisualReference["referenceUse"];
+        assets: Asset[];
+    }[];
+    goTo: (view: StudioView, options?: {
+        auto?: boolean;
+    }) => void;
+    intake: ProjectIntake;
+    languageCode: string;
+    lockedCharacterGroups: {
+        key: string;
+        slot: string;
+        role: VisualReference["role"];
+        name: string;
+        primary?: VisualReference;
+        detail?: VisualReference;
+        references: VisualReference[];
+    }[];
+    lockedProjectReferences: VisualReference[];
+    missingImageRequest: string;
+    name: void;
+    navigation: {
+        id: StudioView;
+        group: "workspace" | "production" | "library";
+        label: string;
+        ariaLabel: string;
+        icon: LucideIcon;
+    }[];
+    newProjectName: string;
+    openFlowDocument: (flowDocument: CanvasDocument) => void;
+    openUploadTile: (kind: "primary" | "detail", event: React.MouseEvent<HTMLButtonElement>) => void;
+    phaseStatusByView: Partial<Record<StudioView, import("./studio-application-presentations").NavigationState>>;
+    pipelineActionLabel: string;
+    pipelineComplete: boolean;
+    pipelinePrimaryLabel: string;
+    pipelineStarted: boolean;
+    pipelineStep: import("@studio/domain/pipeline-gates").PipelineStepId;
+    pipelineSteps: PipelineStepItem[];
+    preflightVideoJob: (targetShot?: Shot) => void;
+    previewGeneratedAsset: Asset | null;
+    previewGeneratedGroup: {
+        key: string;
+        name: string;
+        slot: string;
+        role: VisualReference["role"];
+        referenceUse: VisualReference["referenceUse"];
+        assets: Asset[];
+    } | undefined;
+    previewGeneratedIndex: number;
+    previewRevisionOpen: boolean;
+    previewUpload: {
+        title: string;
+        dataUrl: string;
+        note: string;
+    } | null;
+    primaryUploadInputRef: React.RefObject<HTMLInputElement | null>;
+    productionGraph: import("@studio/production-graph/contracts").ProductionGraph;
+    productionGraphIssues: import("@studio/production-graph/contracts").ProductionGraphIssue[];
+    productionLanguage: string;
+    productionProjectReferences: VisualReference[];
+    project: Project;
+    projectAssets: Asset[];
+    projectBlockedJobs: AutomationJob[];
+    projectBusyJobs: AutomationJob[];
+    projectCharacters: Character[];
+    projectJobs: AutomationJob[];
+    projectManagerOpen: boolean;
+    projectReferences: VisualReference[];
+    projectResolvedFailureJobIds: string[];
+    projectRows: {
+        project: Project;
+        sceneCount: number;
+        shotCount: number;
+        assetCount: number;
+        sourceCount: number;
+        jobCount: number;
+        approvedShots: number;
+        actionNeededJobs: number;
+        activeJobs: number;
+    }[];
+    projectScenes: Scene[];
+    projectSearch: string;
+    projectShots: Shot[];
+    projectStats: {
+        project: Project;
+        sceneCount: number;
+        shotCount: number;
+        assetCount: number;
+        sourceCount: number;
+        jobCount: number;
+        approvedShots: number;
+        actionNeededJobs: number;
+        activeJobs: number;
+    };
+    queueCharacterImageDraft: (reference?: VisualReference | undefined, overrideRequest?: string | undefined, overrideSlot?: string | undefined, overrideName?: string | undefined, overrideReferenceUse?: "primary_identity" | "supporting_detail" | "style_cue" | undefined, overrideRole?: import("@studio/types").ReferenceRole | undefined, directReferenceUse?: "primary_identity" | "supporting_detail" | "style_cue" | undefined) => void;
+    queueVideoJob: (targetShot?: Shot | undefined) => boolean;
+    recentProjectJobs: AutomationJob[];
+    recoverJob: (jobId: string) => void;
+    recoverableCharacterImageJobs: AutomationJob[];
+    referenceCandidates: {
+        id: string;
+        name: string;
+        dataUrl: string;
+        mimeType: string;
+        role: import("@studio/types").ReferenceRole;
+        referenceUse: VisualReference["referenceUse"];
+        characterSlot: string;
+        sourceDescription: string;
+        transformationRequest: string;
+    }[];
+    referenceDraft: {
+        name: string;
+        role: import("@studio/types").ReferenceRole;
+        referenceUse: VisualReference["referenceUse"];
+        visualStyle: string;
+        characterSlot: string;
+        sourceDescription: string;
+        transformationRequest: string;
+        primaryUploads: DraftUpload[];
+        detailUploads: DraftUpload[];
+    };
+    referenceModalPane: "main" | "detail";
+    referenceModalUploadInputRef: React.RefObject<HTMLInputElement | null>;
+    referenceProfileEditing: boolean;
+    referenceRevisionOpen: boolean;
+    referenceRevisionRequest: string;
+    regenerateGeneratedAsset: (asset: Asset) => void;
+    regenerateProductionMedia: (asset: Asset, instruction?: string, settings?: ProductionGraphNodeSettings) => boolean;
+    removeGeneratedAssetGroup: (assetIds: string[]) => void;
+    removeReference: (referenceId: string, ask?: boolean) => void;
+    renderPipelineRail: (title: string, includeSetup?: boolean) => React.JSX.Element;
+    renderVoiceClip: (payload: {
+        shotId?: string;
+        characterId: string;
+        text?: string;
+        preview?: boolean;
+    }) => Promise<void>;
+    replaceState: (nextState: StudioState) => void;
+    requestMissingReferenceImage: () => void;
+    requestSelectedReferenceRevision: () => void;
+    restoreProductionGraphTextVersion: (document: CanvasDocument, text: string) => void;
+    retryAutomationJob: (job: AutomationJob | undefined) => boolean;
+    rewriteStoryWithAi: () => void;
+    runBatchQueue: () => void;
+    runJob: () => void;
+    runPipelineStep: (mode?: "step" | "full") => Promise<void>;
+    runSceneMissingKeyframeQueue: (sceneId: string) => void;
+    runStoryboardOverviewQueue: () => void;
+    runStoryboardRatioRepairQueue: (targets: Array<{
+        shotId: string;
+        sourceAssetId?: string;
+    }>, mode?: NonNullable<PendingStoryboardQueue["mode"]>) => void;
+    runWorkflowTemplate: () => void;
+    safeImageProviderId: string;
+    safeTextProviderId: string;
+    safeVideoProviderId: string;
+    saveVideoReviewFrame: (payload: {
+        assetId: string;
+        kind: "first" | "last";
+        dataUrl: string;
+        timeSeconds: number;
+    }) => Promise<void>;
+    scenePlanSource: string;
+    selectProject: (projectId: string) => Promise<void>;
+    selectedCreativeSkill: import("@studio/types").SkillPack | undefined;
+    selectedReference: VisualReference | null;
+    selectedReferenceDetail: VisualReference | undefined;
+    selectedReferenceDetailJobActive: boolean;
+    selectedReferenceHasGenerationData: boolean;
+    selectedReferenceMainJobActive: boolean;
+    selectedReferencePaneFailedJob: AutomationJob | undefined;
+    selectedReferencePaneHasImage: boolean;
+    selectedReferencePaneJobActive: boolean;
+    selectedReferencePrimary: VisualReference | undefined;
+    selectedReferenceSupportsDetail: boolean;
+    selectedShot: Shot;
+    selectedShotRenderDuration: number;
+    selectedVideoSkill: import("@studio/types").SkillPack;
+    setActiveSkillId: React.Dispatch<React.SetStateAction<string>>;
+    setAppManagerOpen: React.Dispatch<React.SetStateAction<boolean>>;
+    setAppManagerTab: React.Dispatch<React.SetStateAction<"settings" | "projects" | "account">>;
+    setCandidateCarouselIndex: React.Dispatch<React.SetStateAction<Record<string, number>>>;
+    setCandidateEdit: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+    setDraftUploads: (kind: "primary" | "detail", files: File[]) => Promise<void>;
+    setEditInsertAfterShotId: React.Dispatch<React.SetStateAction<string | undefined>>;
+    setEditInsertBrief: React.Dispatch<React.SetStateAction<string>>;
+    setEditInsertKind: React.Dispatch<React.SetStateAction<"shot" | "scene" | "transition">>;
+    setMissingImageRequest: React.Dispatch<React.SetStateAction<string>>;
+    setNewProjectName: React.Dispatch<React.SetStateAction<string>>;
+    setPreviewGeneratedAsset: React.Dispatch<React.SetStateAction<Asset | null>>;
+    setPreviewRevisionOpen: React.Dispatch<React.SetStateAction<boolean>>;
+    setPreviewUpload: React.Dispatch<React.SetStateAction<{
+        title: string;
+        dataUrl: string;
+        note: string;
+    } | null>>;
+    setProjectManagerOpen: React.Dispatch<React.SetStateAction<boolean>>;
+    setProjectSearch: React.Dispatch<React.SetStateAction<string>>;
+    setReferenceCandidates: React.Dispatch<React.SetStateAction<{
+        id: string;
+        name: string;
+        dataUrl: string;
+        mimeType: string;
+        role: import("@studio/types").ReferenceRole;
+        referenceUse: VisualReference["referenceUse"];
+        characterSlot: string;
+        sourceDescription: string;
+        transformationRequest: string;
+    }[]>>;
+    setReferenceDraft: React.Dispatch<React.SetStateAction<{
+        name: string;
+        role: import("@studio/types").ReferenceRole;
+        referenceUse: VisualReference["referenceUse"];
+        visualStyle: string;
+        characterSlot: string;
+        sourceDescription: string;
+        transformationRequest: string;
+        primaryUploads: DraftUpload[];
+        detailUploads: DraftUpload[];
+    }>>;
+    setReferenceModalPane: React.Dispatch<React.SetStateAction<"main" | "detail">>;
+    setReferenceProfileEditing: React.Dispatch<React.SetStateAction<boolean>>;
+    setReferenceRevisionRequest: React.Dispatch<React.SetStateAction<string>>;
+    setSelectedReferenceId: React.Dispatch<React.SetStateAction<string | null>>;
+    setSelectedShotId: React.Dispatch<React.SetStateAction<string>>;
+    setState: React.Dispatch<React.SetStateAction<StudioState>>;
+    setStorySeed: React.Dispatch<React.SetStateAction<string>>;
+    setStoryboardStep: React.Dispatch<React.SetStateAction<number>>;
+    setVideoFrameMenuOpen: React.Dispatch<React.SetStateAction<boolean>>;
+    shotHasVisibleVideo: (shotId?: string) => boolean;
+    showPipelineRail: boolean;
+    showStoryJobStatus: boolean;
+    sourceReadyCount: number;
+    stageReferenceCandidates: () => Promise<void>;
+    state: StudioState;
+    storyCharacters: StoryCharacter[];
+    storyJob: AutomationJob | undefined;
+    storyJobActive: boolean;
+    storySeed: string;
+    storyboardAspectRatio: "9:16" | "16:9" | "4:3" | "3:4" | "1:1";
+    storyboardScene: Scene;
+    storyboardSceneShots: Shot[];
+    storyboardSideShot: Shot;
+    storyboardStep: number;
+    syncStoryboardBreakdownToScenes: () => void;
+    t: (key: import("@studio/renderer-core/i18n").I18nKey) => string;
+    testChatGptConnection: () => undefined;
+    textProvider: import("@studio/types").BrowserProviderAdapter;
+    togglePipelineRun: () => void;
+    topbarNext: {
+        label: string;
+        view: StudioView;
+    } | null;
+    translateProductionContext: () => void;
+    translationJobActive: boolean;
+    updateCharacter: (patch: Partial<Character>) => void;
+    updateIntake: (patch: Partial<ProjectIntake>) => void;
+    updateProductionGraphNode: (nodeId: string, patch: Partial<ProductionGraphCustomNode>) => void;
+    updateProjectPatch: (patch: Partial<Project>) => void;
+    updateScene: (patch: Partial<Scene> & {
+        id: string;
+    }) => void;
+    updateShot: (patch: Partial<Shot> & {
+        id: string;
+    }) => void;
+    updateStoryDocument: (storyDocument: StoryDocument) => void;
+    updateStoryboardBreakdown: (text: string) => void;
+    updateVideoReview: (assetId: string, review: Omit<VideoEditorialReview, "reviewedAt">) => Promise<void>;
+    updateVoiceProfile: (patch: Partial<NonNullable<Character["voiceProfile"]>>) => void;
+    uploadSelectedReferenceReplacement: (file: File) => Promise<void>;
+    videoFrameMenuOpen: boolean;
+    videoFrameMenuRef: React.RefObject<HTMLDivElement | null>;
+    videoPreflightForShot: (targetShot: Shot) => import("@studio/domain/preflight-contract").VideoPreflightValidation;
+    videoSkills: import("@studio/types").SkillPack[];
+};

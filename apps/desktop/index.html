@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Browser-Native AI Video Studio</title>
+    <script>
+      // Chromium may emit this notification when React Flow measures a large
+      // batch of newly mounted nodes. It is not an application exception, so
+      // keep it out of Vite's blocking overlay while allowing every other
+      // runtime error to surface normally.
+      window.addEventListener("error", function (event) {
+        if (event.message === "ResizeObserver loop completed with undelivered notifications.") {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+        }
+      });
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/renderer/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #f4f6f8;
+        color: #1d2430;
+      }
+      body { width: 320px; margin: 0; padding: 16px; box-sizing: border-box; }
+      h1, p, dl, dd { margin: 0; }
+      h1 { font-size: 18px; line-height: 1.2; letter-spacing: -0.01em; }
+      header p { margin-top: 4px; color: #5d6878; font-size: 12px; line-height: 1.45; }
+      .status-list { margin: 16px 0 0; display: grid; gap: 8px; }
+      .status-row { display: grid; grid-template-columns: 10px 1fr auto; gap: 9px; align-items: center; padding: 10px; border: 1px solid #d8dee7; border-radius: 10px; background: #fff; }
+      .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #8a95a5; }
+      .status-dot.ok { background: #17844a; }
+      .status-dot.warn { background: #b86800; }
+      .status-dot.error { background: #b42318; }
+      dt { font-size: 12px; color: #5d6878; }
+      dd { margin-top: 2px; font-size: 12px; font-weight: 700; }
+      .status-detail { color: #5d6878; font-size: 12px; text-align: right; max-width: 112px; line-height: 1.35; }
+      .next-step { margin-top: 12px; padding: 10px; border-radius: 10px; background: #eaf1ff; color: #1c4f9a; font-size: 12px; line-height: 1.45; }
+      .next-step strong { display: block; margin-bottom: 3px; }
+      button { width: 100%; min-height: 36px; margin-top: 12px; border: 1px solid #b9c8e6; border-radius: 8px; background: #fff; color: #1d4f9a; font: inherit; font-size: 12px; font-weight: 650; cursor: pointer; }
+      button:hover { background: #f3f7ff; }
+      button:focus-visible { outline: 3px solid rgba(46, 111, 237, .35); outline-offset: 2px; }
+      [aria-busy="true"] { opacity: .7; }
+      .error-text { margin-top: 10px; color: #b42318; font-size: 12px; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Browser-Native Studio Executor</h1>
+      <p>Kiểm tra từng chặng kết nối trước khi nhận tác vụ.</p>
+    </header>
+    <main id="status" class="status-list" aria-live="polite" aria-busy="true">
+      <div class="status-row"><span class="status-dot"></span><dl><dt>Desktop bridge</dt><dd>Đang kiểm tra…</dd></dl><span class="status-detail">—</span></div>
+      <div class="status-row"><span class="status-dot"></span><dl><dt>Google Flow</dt><dd>Đang kiểm tra…</dd></dl><span class="status-detail">—</span></div>
+      <div class="status-row"><span class="status-dot"></span><dl><dt>Tác vụ đang chạy</dt><dd>Đang kiểm tra…</dd></dl><span class="status-detail">—</span></div>
+    </main>
+    <p id="next-step" class="next-step"><strong>Bước tiếp theo</strong>Đang quét topology…</p>
+    <p id="error" class="error-text" role="alert" hidden></p>
+    <button id="refresh" type="button">Quét lại kết nối</button>
+    <script src="popup.js"></script>
+  </body>
+</html>

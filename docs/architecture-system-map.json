@@ -1,0 +1,2877 @@
+{
+  "version": 2,
+  "sourceOfTruth": "docs/architecture-system-map.json",
+  "maintenance": {
+    "owner": "architecture boundary tests",
+    "validateWith": "pnpm architecture:map",
+    "updateWhen": [
+      "adding or moving a runtime boundary",
+      "changing an entrypoint or contract",
+      "changing ownership of persistence, provider DOM, or workflow state"
+    ],
+    "requiredFields": [
+      "id",
+      "path",
+      "owner",
+      "entrypoints",
+      "contracts",
+      "tests"
+    ]
+  },
+  "changeLog": [
+    {
+      "date": "2026-09-02",
+      "change": "Split bridge destination matching into extension-identity and session helpers; v2 point-to-point routing behavior and fail-closed tests remain unchanged."
+    },
+    {
+      "date": "2026-09-02",
+      "change": "Split connection-v2 envelope validation into header, scope, timing and integrity helpers; preserve deterministic fail-closed codes while reducing the main validator's complexity."
+    },
+    {
+      "date": "2026-09-02",
+      "change": "Split connection-v2 envelope validation into header, scope, timing and integrity helpers without changing fail-closed error codes; protocol/bridge regression coverage remains green."
+    },
+    {
+      "date": "2026-09-02",
+      "change": "Protocol v2 RUN_JOB and CANCEL_JOB now require an exact extension installation, connector instance, browser tab and frame destination; invalid or missing tab/frame identities fail closed before desktop routing."
+    },
+    {
+      "date": "2026-09-01",
+      "change": "Added process-level crash-window regression coverage: an interrupted Flow job with durable submit intent becomes reconciliation_required, requests strict recovery, keeps provider acceptance unset and never becomes a watchdog failure."
+    },
+    {
+      "date": "2026-09-01",
+      "change": "Protocol v2 now requires leaseId and fencingToken on ACK, provider acceptance and result envelopes, aligning inbound stale-lease rejection with the declared one-to-one delivery contract."
+    },
+    {
+      "date": "2026-09-01",
+      "change": "Bridge manager now binds v2 job retries to the active endpoint leaseId and fencingToken; stale split-brain tokens fail closed, with contract coverage for endpoint/token mismatch."
+    },
+    {
+      "date": "2026-09-01",
+      "change": "Added bridge-runtime idle-budget integration coverage for zero, canonical-one and duplicate-two provider-tab visibility; verifies probe counts and no leftover discovery timer after bounded search."
+    },
+    {
+      "date": "2026-09-01",
+      "change": "Bound extension discovery probes for duplicate/incomplete provider tabs as well as empty visibility; candidate diagnostics remain available but no longer wake the worker indefinitely after the startup budget."
+    },
+    {
+      "date": "2026-09-01",
+      "change": "Split extension bridge runtime discovery/status, socket lifecycle and native request helpers while preserving the public runtime contract; architecture rules now report one fewer complexity and function-length hotspot."
+    },
+    {
+      "date": "2026-09-01",
+      "change": "Added isolated packaged MV3 pairing smoke with a fake loopback bridge: first approval, service-worker target restart, stored-secret resume and no RUN_JOB side effects; extension bridge port is build-time configurable for the fixture."
+    },
+    {
+      "date": "2026-09-01",
+      "change": "Added bounded pairing resume after extension service-worker reconnect: stored secret proves a fresh challenge with installation/session identity; resume never re-delivers secret or restores a job submit action."
+    },
+    {
+      "date": "2026-09-01",
+      "change": "Added bounded desktop pairing session state (challenge, explicit code approval, secret delivery, identity-bound confirmation and three-attempt lockout); v2 message transport remains gated until confirmation."
+    },
+    {
+      "date": "2026-09-01",
+      "change": "Account/Connection onboarding now renders four independently observable Flow boundary checks with localized status labels and bounded refresh actions; UI smoke covers all four steps."
+    },
+    {
+      "date": "2026-09-01",
+      "change": "Protocol v2 now enforces a five-minute maximum envelope lifetime in addition to bounded clock-skew checks; overlong expiry windows fail closed before routing or dispatch."
+    },
+    {
+      "date": "2026-08-31",
+      "change": "Added Electron safeStorage-backed pairing secret persistence with atomic mode-0600 writes and fail-closed corrupt/unavailable states; bridge receives the secret only when a secure value is available."
+    },
+    {
+      "date": "2026-08-31",
+      "change": "Added a versioned binary-handle contract with opaque id, issuer/consumer/ACK owner, bounded size/TTL, single-use state, explicit no-resume/backpressure policy and runtime revoke/expiry handling; transport integration remains separate."
+    },
+    {
+      "date": "2026-08-31",
+      "change": "Extension asset downloader now enforces provider-scoped HTTPS host allowlists, validates the final fetch URL and supports blob URLs only when their embedded HTTPS origin is allowlisted; disallowed redirects fail before download."
+    },
+    {
+      "date": "2026-08-31",
+      "change": "Local provider video results are now ffprobe-verified before asset creation when the desktop toolchain is available; missing video stream, missing duration and metadata mismatch over 0.25s fail closed without import."
+    },
+    {
+      "date": "2026-08-31",
+      "change": "Provider media trust validation now rejects non-finite, non-positive or over-one-hour declared durations before filesystem reads/import; actual ffprobe duration remains a separate pending gate."
+    },
+    {
+      "date": "2026-08-31",
+      "change": "Added bounded bridge-runtime reconnect smoke with a fake WebSocket: worker session restart emits one HELLO per socket, schedules capped reconnect and never implicitly emits RUN_JOB."
+    },
+    {
+      "date": "2026-08-31",
+      "change": "Added offline extension package verifier for MV3 manifest parity, required bundles, content-script paths and Node syntax checks; it fails before publish when a built artifact is incomplete."
+    },
+    {
+      "date": "2026-08-31",
+      "change": "Added Playwright UI geometry matrix smoke across Compact 1200x920, Compact floor 1180x760, Max 1440x900 and Max-wide 1920x1080 for all eight core views; document and shell columns must remain within viewport."
+    },
+    {
+      "date": "2026-08-31",
+      "change": "Protocol v2 now has deterministic malformed-corpus fuzz coverage, required-field matrix coverage and exact expiry/clock-skew boundary tests; validator remains total and fail-closed for untrusted input."
+    },
+    {
+      "date": "2026-08-31",
+      "change": "Bridge server factory now forwards desktop identity, optional pairing verifier, lease release and retention guards into every socket message boundary; prevents production-only lease wiring loss and enforces configured destination/auth checks."
+    },
+    {
+      "date": "2026-08-31",
+      "change": "Persisted submit intent and explicit submission states before bridge delivery; restart normalization now marks an unfinished intent as reconciliation-required instead of inferring provider acceptance."
+    },
+    {
+      "date": "2026-08-31",
+      "change": "Added shared capability negotiation metadata and desktop pre-dispatch filtering for protocol/provider/executor/task/message-size compatibility while preserving legacy v1 endpoints."
+    },
+    {
+      "date": "2026-08-31",
+      "change": "Added desktop job-target lease affinity so retry/cancel messages remain point-to-point on the original extension endpoint; terminal results and socket drops release the lease without disturbing fair rotation for other jobs."
+    },
+    {
+      "date": "2026-08-31",
+      "change": "Persisted a desktop instance identity atomically and wired it into the bridge server's v2 destination validation; legacy v1 traffic remains compatible."
+    },
+    {
+      "date": "2026-08-31",
+      "change": "Persisted an opaque extension installation identity separately from each service-worker session so desktop diagnostics can distinguish restarts without treating a new worker as a new installation."
+    },
+    {
+      "date": "2026-08-31",
+      "change": "Added a bounded extension discovery state contract: startup search probes stop at a fixed budget, duplicate/incomplete Flow tabs remain candidates, and only a canonical workspace enters low-energy diagnostics shared with desktop and popup."
+    },
+    {
+      "date": "2026-08-31",
+      "change": "Activated Flow UI-direct readiness on one plain workspace, separated semantic preflight evidence from the one-keyframe provider transport, and hardened composer discovery against the live add_2 source control."
+    },
+    {
+      "date": "2026-08-31",
+      "change": "Made the Google Flow executor explicit per job: new video jobs select the normal workspace UI-direct v2 path, historical jobs retain custom-tool v1 semantics, and desktop WebSocket transport remains unchanged."
+    },
+    {
+      "date": "2026-08-25",
+      "change": "Added a versioned character identity contract rendered as compact YAML, persisted provider provenance for reference transport, and unified production-task status semantics across navigation, toast, and durable activity history."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Applied independent audit critical fixes: desktop IPC mutations now use the state-store mutation boundary; workflow orchestration consumes an injectable bridge contract; renderer no longer imports workflow through a relative source path."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Split extension durable job/result payload types from the compatibility types facade; background runtime modules now consume the narrow job-types contract."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Split high fan-in domain text helpers into labels, layout, and identifiers boundaries; workflow imports now target the narrow contract they consume while text-support remains a compatibility facade."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Moved Flow pointer gestures and media-picker overlay controls into a dependency-injected DOM-controls boundary; content.ts now composes provider interaction primitives rather than defining them inline."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Added behavior contract coverage for Flow workspace/diagnostics and ChatGPT wait-tier boundaries; tests exercise runtime contracts rather than source text patterns."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Extracted Google Flow diagnostics formatting and page-error classification into an injected provider boundary; DOM content orchestration now supplies only observed page data."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Moved Google Flow timeout race handling into a provider async boundary; request orchestration now reuses one tested timeout contract."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Extracted the Google Flow main-world bridge request/response lifecycle into an isolated provider contract; content orchestration now aliases the tested bridge boundary."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Extracted Google Flow workspace URL normalization and route matching into a provider boundary; locked-project recovery now consumes one deterministic workspace contract."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Extracted ChatGPT image recovery decision and recovered-asset shaping into an injected provider boundary; content.ts retains DOM discovery and bridge reporting only."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Moved Google Flow submit-rejection classification into the provider page-error contract; content orchestration now delegates prompt/source rejection semantics to the pure boundary."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Extracted ChatGPT text wait-tier policy into a pure provider boundary; reasoning timeout selection is now independently testable and content DOM orchestration remains focused on capture."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Extracted ChatGPT reference-library fingerprint and bounded local registry into a provider-owned contract; DOM conversation orchestration now consumes the deduplication boundary."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Moved production-graph validation into its own contract boundary; graph construction and validation now have separate ownership while the package entrypoint preserves the public API."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Removed the renderer UI support helper's dependency on the shared type barrel; it now consumes a local presentation contract, preserving runtime shape while reducing one renderer-to-domain depth edge. Verified with typecheck and Sentrux gate."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Completed the remaining milestone-3 complexity block across provider adapters, ChatGPT/ElevenLabs DOM capture, renderer playback/pipeline/graph persistence, screenplay ordering, and reference generation; max_cc is now enforced at 12 with all rules passing."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Completed a cohesive recovery/provider/renderer hotspot refactor: idempotency, duplicate media recovery, Flow reference ledger persistence, storyboard motion validation, and production-graph payload assembly now use named boundaries; contracts remain covered by typecheck, architecture-map, and Sentrux gates."
+    },
+    {
+      "date": "2026-08-22",
+      "change": "Made boundary mapping self-validating and documented renderer/workflow/main/extension ownership."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Moved storyboard scene/shot editing context into its own renderer boundary; the application shell remains composition-only and all edits still flow through the application contract."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Split shot review rendering into media, copy, and action boundaries; ShotCard now composes review state without owning every conditional branch."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Split reference editing into media and profile boundaries; the overlay shell now only coordinates selection and modal ownership."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Removed the unreferenced story-orchestration compatibility facade; active story composition remains owned by the application workflow boundary."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Removed the obsolete story-prompts implementation; story-foundation-prompts and story-scene-prompts are the active narrative prompt boundaries."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Kept spatial canvas layout and canvas rendering on the renderer studio-type boundary; they no longer traverse the renderer-contract facade for canvas-only contracts."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Removed three unreferenced renderer compatibility modules; active runtime, voice routing, and review ownership remain in their mapped boundaries."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Moved canvas contracts to the shared type source to remove the deepest renderer canvas-to-workflow traversal; layout and graph views now consume domain-owned canvas types directly."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Flattened the renderer overlay wrapper into the application composition root; overlay modules remain independently owned while one indirection is removed from the runtime graph."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Moved insert-queue view inputs to the domain type source; the generate-screen path no longer traverses the renderer contract facade."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Removed unused source-library type aliases from insert-queue views; the generate-screen dependency path is now provider-neutral and direct."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Made overview component inputs domain-owned and kept its view union local; the overview screen no longer traverses workflow renderer contracts."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Moved story package comments and document typing to the domain source with a local view union; story screen composition no longer traverses renderer contracts."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Moved shot review skill typing to the domain source; storyboard review composition no longer traverses the workflow renderer contract."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Moved renderer-only pipeline metrics out of workflow; the application pipeline now owns its pure presentation metric boundary without a reverse renderer-to-workflow traversal."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Extracted desktop asset-save, sequence-audio, and shot-timing normalization callbacks into named helpers; IPC handlers remain thin composition boundaries and behavior is unchanged."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Moved ChatGPT structured-response validation and balanced JSON recovery into a provider-local pure boundary; DOM conversation orchestration now consumes the contract without owning schema parsing."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Moved Google Flow media-picker candidate discovery and ordering into a provider-local boundary; content orchestration retains upload/submit lifecycle while picker matching remains reusable and testable."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Moved Google Flow visible result-tile inspection into a dependency-injected provider boundary; recovery and reference search now consume one media readiness contract."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Made renderer runtime-id generation local instead of traversing the domain text-support module; story rendering no longer adds a UI-to-domain depth hop for an identifier helper."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Made renderer UI formatting local instead of importing domain text-support; source/story screens no longer add a presentation-to-domain depth hop for labels and orientation."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Made renderer entity-key normalization local instead of importing domain text-support; renderer identity helpers now remain on the presentation layer."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Extracted Google Flow route/duplicate-dispatch handling into a provider job-dispatch boundary; content.ts retains execution and result recovery while routing remains independently testable."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Extracted Google Flow prompt-editor insertion, verification, and recovery tiers into a dependency-injected provider boundary; content.ts now composes prompt staging without owning editor mutation branches."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Deduplicated exports in the retained renderer compatibility facades; they remain mapped as compatibility-only and no runtime ownership is added."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Changed studio-overlays from passive re-exports to one model-injected StudioOverlayStack; overlay components no longer independently read renderer context, preserving one explicit context owner."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Added a type-only renderer overlay contract boundary for upload, project, app, generated-asset, and reference overlays; overlays now declare only the fields they render or mutate while context remains the composition owner."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Moved renderer provider-action factory composition into a dedicated boundary; the application model remains lifecycle/state owner while provider orchestration is assembled through one typed factory."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Moved generated-asset preview into the same model-injected overlay stack; all renderer overlays now share one explicit model/context acquisition point."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Removed the redundant workflow type gateway after migrating every consumer to the domain type source; this is the authoritative depth-reduction block."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Moved asset screen identity/reference types to the domain source; the secondary screen registry no longer traverses renderer contracts."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Kept application presentation view unions local; presentation derivation no longer traverses workflow studio types."
+    },
+    {
+      "date": "2026-08-22",
+      "change": "Moved renderer orchestration actions behind the workflow boundary; renderer remains the composition layer."
+    },
+    {
+      "date": "2026-08-22",
+      "change": "Moved workflow-shared pure support contracts behind support-core so workflow no longer imports renderer implementation modules."
+    },
+    {
+      "date": "2026-08-22",
+      "change": "Added shallow renderer application facades for pipeline/runtime composition; deep orchestration imports remain direct to preserve the depth budget."
+    },
+    {
+      "date": "2026-08-22",
+      "change": "Split provider recovery/capture decisions and desktop bridge/media branches into named helpers; ownership and retry behavior remain in their existing boundaries."
+    },
+    {
+      "date": "2026-08-22",
+      "change": "Moved pipeline status/label derivation out of the application hook into a pure presentation contract; UI remains the composition owner."
+    },
+    {
+      "date": "2026-08-22",
+      "change": "Centralized ChatGPT saved-conversation URL validation in the domain boundary; desktop and extension keep compatibility wrappers only."
+    },
+    {
+      "date": "2026-08-22",
+      "change": "Separated ChatGPT structured-text normalization from DOM orchestration; the content adapter remains the provider boundary."
+    },
+    {
+      "date": "2026-08-22",
+      "change": "Split Google Flow page-error classification into provider-local pure predicates; reload/recovery behavior remains unchanged."
+    },
+    {
+      "date": "2026-08-22",
+      "change": "Made production-canvas node layout persistence synchronous at drag-stop so navigation cannot race a pending layout write."
+    },
+    {
+      "date": "2026-08-22",
+      "change": "Moved renderer media regeneration ownership into a dependency-injected media action boundary; application hook now composes it without owning provider dispatch details."
+    },
+    {
+      "date": "2026-08-22",
+      "change": "Reused the existing shallow renderer runtime facade for media/pipeline presentation exports so the model hook does not fan out directly to every boundary."
+    },
+    {
+      "date": "2026-08-22",
+      "change": "Moved Flow prompt fingerprint/compaction lifecycle into a dedicated renderer action contract; the application hook now only composes it."
+    },
+    {
+      "date": "2026-08-22",
+      "change": "Made SQLite schema migration DDL and schema_migrations ledger writes atomic; persistence ownership now records the migration contract explicitly."
+    },
+    {
+      "date": "2026-08-22",
+      "change": "Moved renderer keyboard and reference-panel effects into dedicated hook boundaries; application model remains the composition owner."
+    },
+    {
+      "date": "2026-08-22",
+      "change": "Moved YOLO continuation/retry effects out of the application model into a provider-neutral pipeline-effects boundary; retry ordering remains serial and durable."
+    },
+    {
+      "date": "2026-08-22",
+      "change": "Separated the renderer application model contract from the React context provider so consumers depend on a stable type boundary."
+    },
+    {
+      "date": "2026-08-22",
+      "change": "Moved renderer runtime-state and project-state action composition behind a dedicated application runtime slice."
+    },
+    {
+      "date": "2026-08-22",
+      "change": "Added a workflow type gateway so workflow modules consume shared contracts through one explicit package boundary."
+    },
+    {
+      "date": "2026-08-22",
+      "change": "Moved spatial canvas layout/graph derivation behind a pure renderer layout boundary and kept the canvas shell under 500 lines."
+    },
+    {
+      "date": "2026-08-22",
+      "change": "Split spatial canvas node and edge derivation into bounded asset, group, lineage, and continuity builders; the layout contract stays pure and its stage/lineage edge invariants remain mapped."
+    },
+    {
+      "date": "2026-08-22",
+      "change": "Removed the renderer seed's dependency on the broad workflow studio-types module; SkillDoc now resolves directly to the shared SkillPack contract, shortening the application runtime path without changing state shape."
+    },
+    {
+      "date": "2026-08-22",
+      "change": "Kept the pure pipeline classifier's view union local to its boundary so pipeline derivation no longer traverses the broader workflow studio-types module."
+    },
+    {
+      "date": "2026-08-22",
+      "change": "Made production-graph contracts the single type source for the graph builder; the public graph entrypoint now re-exports the mapped contract instead of maintaining a duplicate type model."
+    },
+    {
+      "date": "2026-08-22",
+      "change": "Grouped renderer lifecycle hooks under the hooks boundary; runtime facade remains the only application-model import path and the system map records the new ownership."
+    },
+    {
+      "date": "2026-08-22",
+      "change": "Separated pure Google Flow page-error classification from DOM reporting so provider recovery can be tested without browser orchestration."
+    },
+    {
+      "date": "2026-08-22",
+      "change": "Moved durable studio:run-job registration behind a dependency-injected desktop IPC job boundary; main.cjs retains lifecycle composition and the job contract is mapped explicitly."
+    },
+    {
+      "date": "2026-08-22",
+      "change": "Moved local voice and sound-bed IPC handlers behind a dedicated audio boundary; media generation remains dependency-injected and main.cjs only composes it."
+    },
+    {
+      "date": "2026-08-22",
+      "change": "Separated Google Flow composer settings policy from the provider content entrypoint; supported mode, ratio, duration, and source-mode selection now share a focused contract."
+    },
+    {
+      "date": "2026-08-22",
+      "change": "Moved renderer board, navigation, project-row, and active-job derivations into a pure presentation boundary; application orchestration remains the owner of state and side effects."
+    },
+    {
+      "date": "2026-08-22",
+      "change": "Moved pipeline metrics, blocking-job classification, retry presentation, and completion derivation into a pure application pipeline-view boundary."
+    },
+    {
+      "date": "2026-08-22",
+      "change": "Extracted project reference generation, upload, recovery, and reference-panel effects into a dedicated renderer reference domain hook."
+    },
+    {
+      "date": "2026-08-22",
+      "change": "Extracted retry orchestration and YOLO continuation effects into a dedicated pipeline domain hook; provider retry remains injected and serial."
+    },
+    {
+      "date": "2026-08-22",
+      "change": "Moved StudioContent screen registry out of the application shell and flattened overlay composition at the shell boundary."
+    },
+    {
+      "date": "2026-08-22",
+      "change": "Extracted Google Flow DOM selector definitions into a provider-local selector contract; content orchestration keeps ownership of timing, recovery, and result capture."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Separated foundation and architecture prompt construction from screenplay/shot prompt construction so narrative foundation remains an independent contract."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Separated screenplay and shot prompt construction from the story-development prompt contract; scene/shot stages now have an explicit boundary."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Moved pipeline rail presentation out of the renderer application model; the model keeps orchestration/state callbacks while the rail owns only UI composition."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Moved provider-neutral pipeline controls and next-action navigation into the existing pipeline domain; pause, retry, cancel, and YOLO continuation remain injected callbacks."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Grouped prompt-compaction and media command construction behind the existing renderer runtime facade; provider and persistence side effects remain injected."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Isolated Google Flow reference fingerprint, project cache, and duplicate-upload ledger behind a provider-local dependency-injected contract."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Moved Google Flow result media classification and image-only/video guards behind a provider-local dependency-injected boundary."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Moved Google Flow result ownership, late hydration, strict recovery, and media capture behind a dependency-injected result/recovery contract."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Moved Google Flow composer settings DOM orchestration behind a provider-local dependency-injected boundary; settings policy remains separate."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Moved Google Flow reference search, visual fingerprint matching, and library-tile reuse behind a provider-local boundary."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Moved Google Flow native input, drag/drop, and trusted click paths behind a provider-local dependency-injected boundary."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Added a single Google Flow runtime-boundary facade so content orchestration does not become a provider fan-out hub."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Removed redundant module-level dependency wrapper functions from the Flow composer, reference-search, native-input, and result-recovery boundaries; calls now use the injected dependency object directly, preserving the same adapter contract while reducing call-graph noise."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Recorded the StudioPipelineRail icon dependency contract: pipeline UI derives the icon from the application composition layer, which must pass every state-dependent icon explicitly; verified by desktop smoke."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Split bridge message contracts from the protocol package barrel and moved consumers to the explicit job-request subpath; the package entrypoint remains backward-compatible while the runtime graph records the narrower contract."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Extracted Google Flow composer-surface discovery (active editor, composer root, panel attachments) into its own provider-local contract; content orchestration retains job/recovery ownership while DOM surface traversal is no longer duplicated."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Split the storyboard side context into script, scene, and shot panels; the shell now only selects the stage while each editor owns its own bounded controls and update callbacks."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Moved the Electron export-sequence IPC handler into a dependency-injected export boundary; main.cjs now registers the handler while export validation, Swift lifecycle, manifest writing, and master-asset registration live together in one contract."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Moved studio:save-asset source resolution, save-dialog naming, data/URL/local copy handling, and error normalization into a dependency-injected desktop media boundary."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Removed studio-content-secondary from the live application screen path; StudioApplication now imports screen boundaries directly and SourceScreen owns the source-bin composition, reducing one barrel depth level."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Balanced the direct screen path with narrow overlay and narrative-screen registries; GenerateScreen remains direct to preserve the reduced depth path while StudioApplication fan-out stays within the god-file rule."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Deleted the now-unreferenced studio-content-secondary compatibility registry so Sentrux cannot count its obsolete deep screen path; live screen ownership is represented by direct screens plus narrow registries."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Moved preview-only image URL derivation to a renderer media primitive without shared type imports; the overlay registry no longer creates a false path through production-ui-support and the types barrel."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Recorded the human-readable ownership/change protocol in docs/architecture-ownership-map.md and moved saved-job recovery branching behind the desktop recovery boundary; structured imports, Flow recovery, and ChatGPT conversation recovery keep distinct contracts and durable status semantics."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Reduced provider/bridge/job hotspot complexity as one recovery block: Flow picker predicates, Flow result reveal guards, desktop bridge hello/status transitions, and retry target derivation now use named contract helpers without changing provider protocol or retry semantics."
+    }
+  ],
+  "rules": {
+    "rendererMayDependOn": [
+      "types",
+      "protocol",
+      "domain",
+      "production-graph",
+      "workflow"
+    ],
+    "workflowMayDependOn": [
+      "types",
+      "react"
+    ],
+    "extensionMayDependOn": [
+      "protocol",
+      "types"
+    ],
+    "providerDomMayNotOwn": [
+      "rendererState",
+      "projectPersistence"
+    ],
+    "mainMayOwn": [
+      "projectState",
+      "persistence",
+      "jobLifecycle"
+    ]
+  },
+  "boundaries": [
+    {
+      "id": "desktop-renderer",
+      "path": "apps/desktop/src/renderer",
+      "owner": "renderer composition root",
+      "entrypoints": [
+        "apps/desktop/src/renderer/main.tsx"
+      ],
+      "contracts": [
+        "window.studioBridge",
+        "@studio/types",
+        "@studio/protocol"
+      ],
+      "tests": [
+        "packages/renderer/src/tests/pipeline-runtime.test.cjs",
+        "packages/renderer/src/tests/video-queue-orchestration.test.cjs"
+      ]
+    },
+    {
+      "id": "desktop-job-ipc",
+      "path": "apps/desktop/src/main/{job-handlers,job-handler-actions}.cjs",
+      "owner": "desktop job submission and recovery IPC boundary",
+      "entrypoints": [
+        "apps/desktop/src/main/job-handlers.cjs",
+        "apps/desktop/src/main/job-handler-actions.cjs"
+      ],
+      "contracts": [
+        "RunJobPayload",
+        "idempotency key",
+        "video preflight",
+        "provider bridge dispatch",
+        "saved structured-response recovery",
+        "provider-specific recovery"
+      ],
+      "invariants": [
+        "preflight and character-voice conflicts are rejected before provider dispatch",
+        "active jobs remain idempotent",
+        "saved structured responses are imported before provider rescan",
+        "Flow recovery never silently resubmits a completed job",
+        "state persistence and renderer notification are injected dependencies",
+        "no Electron lifecycle or provider DOM ownership"
+      ],
+      "tests": [
+        "apps/desktop/src/tests/job-lifecycle.test.cjs",
+        "packages/renderer/src/tests/video-queue-orchestration.test.cjs",
+        "packages/renderer/src/tests/architecture-mapping.test.cjs"
+      ]
+    },
+    {
+      "id": "desktop-export-sequence",
+      "path": "apps/desktop/src/main/export-sequence-handler.cjs",
+      "owner": "desktop sequence export lifecycle boundary",
+      "entrypoints": [
+        "apps/desktop/src/main/export-sequence-handler.cjs",
+        "apps/desktop/src/main/main.cjs"
+      ],
+      "contracts": [
+        "persisted edit sequence",
+        "export manifest",
+        "Swift renderer process",
+        "master video asset"
+      ],
+      "invariants": [
+        "draft/final validation happens before spawning",
+        "source assets remain unchanged on failure/cancel",
+        "state access and renderer notifications are injected",
+        "export process ownership is explicit and cancellable"
+      ],
+      "tests": [
+        "pnpm typecheck:desktop",
+        "pnpm test:unit",
+        "pnpm verify:persistence"
+      ]
+    },
+    {
+      "id": "desktop-save-asset",
+      "path": "apps/desktop/src/main/save-asset-handler.cjs",
+      "owner": "desktop asset download and save IPC boundary",
+      "entrypoints": [
+        "apps/desktop/src/main/save-asset-handler.cjs",
+        "apps/desktop/src/main/main.cjs"
+      ],
+      "contracts": [
+        "asset/reference source resolution",
+        "save dialog",
+        "data URL/http/local copy"
+      ],
+      "invariants": [
+        "source state is read through an injected getter",
+        "save failures return normalized errors",
+        "provider and persistence ownership remain outside the handler"
+      ],
+      "tests": [
+        "pnpm typecheck:desktop",
+        "pnpm test:unit",
+        "packages/renderer/src/tests/architecture-mapping.test.cjs"
+      ]
+    },
+    {
+      "id": "desktop-audio-ipc",
+      "path": "apps/desktop/src/main/{audio-handlers,audio-handler-actions}.cjs",
+      "owner": "desktop local voice and sound-bed IPC boundary",
+      "entrypoints": [
+        "apps/desktop/src/main/audio-handlers.cjs",
+        "apps/desktop/src/main/audio-handler-actions.cjs"
+      ],
+      "contracts": [
+        "locked voice profile",
+        "persisted edit sequence",
+        "measured audio asset"
+      ],
+      "invariants": [
+        "voice clips are bounded by the persisted edit window",
+        "generated files are measured before becoming reviewable assets",
+        "audio handlers do not own renderer state or provider DOM"
+      ],
+      "tests": [
+        "apps/desktop/src/tests/voice-casting.test.cjs",
+        "apps/desktop/src/tests/architecture-contracts.test.cjs",
+        "packages/renderer/src/tests/architecture-mapping.test.cjs"
+      ]
+    },
+    {
+      "id": "renderer-workflow",
+      "path": "packages/renderer/src",
+      "owner": "renderer domain and orchestration",
+      "entrypoints": [
+        "packages/renderer/src/studio-application.tsx",
+        "packages/renderer/src/studio-application-model.tsx"
+      ],
+      "contracts": [
+        "@studio/types",
+        "@studio/protocol",
+        "@studio/domain",
+        "@studio/production-graph",
+        "@studio/workflow/reference-workspace"
+      ],
+      "tests": [
+        "packages/renderer/src/tests"
+      ]
+    },
+    {
+      "id": "renderer-contracts",
+      "path": "packages/workflow/src/renderer-contracts.ts",
+      "owner": "single shared-contract boundary for renderer feature modules",
+      "entrypoints": [
+        "packages/workflow/src/renderer-contracts.ts"
+      ],
+      "contracts": [
+        "@studio/types"
+      ],
+      "invariants": [
+        "no React, Electron, DOM, persistence, or provider automation",
+        "renderer feature modules prefer this boundary over repeated cross-package imports",
+        "legacy facades remain compatibility-only"
+      ],
+      "tests": [
+        "packages/renderer/src/tests/architecture-mapping.test.cjs"
+      ]
+    },
+    {
+      "id": "renderer-contract-facades",
+      "path": "packages/workflow/src/renderer-types.ts, packages/workflow/src/renderer-protocol.ts",
+      "owner": "single renderer import boundary for shared domain and bridge contracts",
+      "entrypoints": [
+        "packages/workflow/src/renderer-types.ts",
+        "packages/workflow/src/renderer-protocol.ts"
+      ],
+      "contracts": [
+        "@studio/types",
+        "@studio/protocol"
+      ],
+      "invariants": [
+        "legacy facades contain no runtime state",
+        "compatibility exports do not own provider or persistence behavior"
+      ],
+      "tests": [
+        "packages/renderer/src/tests/architecture-mapping.test.cjs"
+      ]
+    },
+    {
+      "id": "renderer-domain-facade",
+      "path": "packages/workflow/src/renderer-domain.ts",
+      "owner": "renderer boundary for pure validation and pipeline contracts",
+      "entrypoints": [
+        "packages/workflow/src/renderer-domain.ts"
+      ],
+      "contracts": [
+        "@studio/domain/pipeline-gates",
+        "@studio/domain/shot-classification"
+      ],
+      "invariants": [
+        "no React, Electron, DOM, or persistence dependencies"
+      ],
+      "tests": [
+        "packages/domain/src/tests",
+        "packages/renderer/src/tests/architecture-mapping.test.cjs"
+      ]
+    },
+    {
+      "id": "renderer-bridge-contract",
+      "path": "packages/renderer/src/studio-bridge.d.ts",
+      "owner": "typed renderer-to-desktop bridge surface",
+      "entrypoints": [
+        "packages/renderer/src/studio-bridge.d.ts"
+      ],
+      "contracts": [
+        "StudioState",
+        "RunJobPayload",
+        "BridgeStatus"
+      ],
+      "invariants": [
+        "declaration-only; no runtime state or provider DOM automation",
+        "renderer actions call the bridge contract rather than redefining window APIs",
+        "desktop IPC remains the owner of persistence and job lifecycle"
+      ],
+      "tests": [
+        "packages/renderer/src/tests/architecture-mapping.test.cjs",
+        "apps/desktop/src/tests"
+      ]
+    },
+    {
+      "id": "renderer-core-support",
+      "path": "packages/renderer/src/core",
+      "owner": "renderer pure support utilities",
+      "entrypoints": [
+        "@studio/renderer-core/*"
+      ],
+      "contracts": [
+        "@studio/types",
+        "@studio/protocol",
+        "Storage"
+      ],
+      "invariants": [
+        "no React component ownership",
+        "no Electron or provider DOM automation",
+        "feature modules consume support through the stable renderer-core alias"
+      ],
+      "tests": [
+        "packages/renderer/src/tests/architecture-mapping.test.cjs",
+        "packages/renderer/src/tests/pipeline-runtime.test.cjs"
+      ]
+    },
+    {
+      "id": "renderer-character-planning",
+      "path": "packages/renderer/src/studio-project-slice.tsx",
+      "owner": "project-scoped character reference readiness and recovery planning",
+      "entrypoints": [
+        "packages/renderer/src/studio-project-slice.tsx"
+      ],
+      "contracts": [
+        "@studio/types",
+        "RunJobPayload",
+        "reference classification"
+      ],
+      "invariants": [
+        "character planning stays project-scoped",
+        "reference readiness is derived from project-scoped assets and jobs",
+        "primary identity and supporting detail remain separate requirements"
+      ],
+      "tests": [
+        "packages/renderer/src/tests/architecture-mapping.test.cjs",
+        "packages/renderer/src/tests/pipeline-runtime.test.cjs"
+      ]
+    },
+    {
+      "id": "workflow-reference",
+      "path": "packages/workflow/src/reference-workspace.ts",
+      "owner": "reference workspace state hook",
+      "entrypoints": [
+        "@studio/workflow/reference-workspace"
+      ],
+      "contracts": [
+        "@studio/types",
+        "react"
+      ],
+      "tests": [
+        "packages/renderer/src/tests"
+      ]
+    },
+    {
+      "id": "renderer-pipeline-runtime",
+      "path": "packages/renderer/src/studio-pipeline-runtime.ts",
+      "owner": "durable renderer pipeline and storyboard queue runtime",
+      "entrypoints": [
+        "packages/renderer/src/studio-pipeline-runtime.ts"
+      ],
+      "contracts": [
+        "PipelineRunState",
+        "PendingStoryboardQueue",
+        "Storage"
+      ],
+      "invariants": [
+        "runtime persistence is project-scoped",
+        "workflow runtime depends only on shared types and browser storage",
+        "renderer contracts remain independent of workflow runtime implementation"
+      ],
+      "tests": [
+        "packages/renderer/src/tests/pipeline-runtime.test.cjs",
+        "packages/renderer/src/tests/architecture-mapping.test.cjs"
+      ]
+    },
+    {
+      "id": "renderer-application-workflow-facade",
+      "path": "packages/renderer/src/studio-application-workflow.ts",
+      "owner": "application composition facade for shallow pipeline contracts",
+      "entrypoints": [
+        "packages/renderer/src/studio-application-workflow.ts"
+      ],
+      "contracts": [
+        "pipeline readiness",
+        "job target classification"
+      ],
+      "invariants": [
+        "facade is pure re-export only",
+        "deep provider orchestration is not re-exported through this boundary"
+      ],
+      "tests": [
+        "packages/renderer/src/tests/architecture-mapping.test.cjs"
+      ]
+    },
+    {
+      "id": "renderer-application-runtime-facade",
+      "path": "packages/renderer/src/studio-application-runtime.ts",
+      "owner": "application composition facade for renderer runtime hooks",
+      "entrypoints": [
+        "packages/renderer/src/studio-application-runtime.ts"
+      ],
+      "contracts": [
+        "renderer runtime hooks",
+        "project commands",
+        "runtime persistence"
+      ],
+      "invariants": [
+        "facade does not own provider DOM or desktop persistence",
+        "production graph controller remains a direct renderer dependency to avoid deep indirection"
+      ],
+      "tests": [
+        "packages/renderer/src/tests/architecture-mapping.test.cjs"
+      ]
+    },
+    {
+      "id": "renderer-pipeline-presentation",
+      "path": "packages/renderer/src/studio-pipeline-presentation.ts",
+      "owner": "pure pipeline status and action-label derivation",
+      "entrypoints": [
+        "packages/renderer/src/studio-pipeline-presentation.ts"
+      ],
+      "contracts": [
+        "PipelineStepId",
+        "VideoPreflightValidation",
+        "project job state"
+      ],
+      "invariants": [
+        "no React, Electron, provider DOM, or persistence imports",
+        "presentation derivation never mutates pipeline state",
+        "preflight and Sequence QA blocking messages remain visible to the user"
+      ],
+      "tests": [
+        "packages/renderer/src/tests/architecture-mapping.test.cjs",
+        "packages/renderer/src/tests/pipeline-runtime.test.cjs"
+      ]
+    },
+    {
+      "id": "renderer-media-actions",
+      "path": "packages/renderer/src/studio-media-actions.ts",
+      "owner": "renderer media regeneration command boundary",
+      "entrypoints": [
+        "packages/renderer/src/studio-media-actions.ts"
+      ],
+      "contracts": [
+        "Asset",
+        "RunJobPayload",
+        "provider-neutral media commands"
+      ],
+      "invariants": [
+        "commands receive side effects through dependencies",
+        "provider routing remains delegated to existing video/reference actions",
+        "regeneration never mutates state directly"
+      ],
+      "tests": [
+        "packages/renderer/src/tests/video-queue-orchestration.test.cjs",
+        "packages/renderer/src/tests/architecture-mapping.test.cjs"
+      ]
+    },
+    {
+      "id": "renderer-prompt-compaction",
+      "path": "packages/renderer/src/studio-prompt-compaction.ts",
+      "owner": "Flow prompt compaction and fingerprint lifecycle",
+      "entrypoints": [
+        "packages/renderer/src/studio-prompt-compaction.ts"
+      ],
+      "contracts": [
+        "ProductionGraphCustomNode",
+        "ProductionGraphRevision",
+        "RunJobPayload"
+      ],
+      "invariants": [
+        "compaction is project/shot scoped",
+        "completed compacted output is reused only when hash/byte identity matches",
+        "compaction job is persisted before Flow submission",
+        "no provider DOM ownership"
+      ],
+      "tests": [
+        "packages/renderer/src/tests/video-queue-orchestration.test.cjs",
+        "packages/renderer/src/tests/architecture-mapping.test.cjs"
+      ]
+    },
+    {
+      "id": "renderer-ui-effects",
+      "path": "packages/renderer/src/hooks/studio-ui-effects.ts",
+      "owner": "renderer keyboard command effects",
+      "entrypoints": [
+        "packages/renderer/src/hooks/studio-ui-effects.ts"
+      ],
+      "contracts": [
+        "keyboard shortcut commands",
+        "renderer state setters"
+      ],
+      "invariants": [
+        "no persistence or provider DOM ownership",
+        "shortcuts dispatch existing application commands"
+      ],
+      "tests": [
+        "packages/renderer/src/tests/architecture-mapping.test.cjs",
+        "tests/e2e/studio.spec.ts"
+      ]
+    },
+    {
+      "id": "renderer-reference-effects",
+      "path": "packages/renderer/src/hooks/studio-reference-effects.ts",
+      "owner": "renderer reference-panel lifecycle effects",
+      "entrypoints": [
+        "packages/renderer/src/hooks/studio-reference-effects.ts"
+      ],
+      "contracts": [
+        "reference workspace state",
+        "character detail generation command"
+      ],
+      "invariants": [
+        "effects only coordinate renderer state and commands",
+        "reference assets and persistence remain owned by existing action boundaries"
+      ],
+      "tests": [
+        "packages/renderer/src/tests/architecture-mapping.test.cjs",
+        "packages/renderer/src/tests/pipeline-runtime.test.cjs"
+      ]
+    },
+    {
+      "id": "renderer-pipeline-effects",
+      "path": "packages/renderer/src/hooks/studio-pipeline-effects.ts",
+      "owner": "renderer YOLO continuation and retry effects",
+      "entrypoints": [
+        "packages/renderer/src/hooks/studio-pipeline-effects.ts"
+      ],
+      "contracts": [
+        "PipelineRunState",
+        "serial retry policy",
+        "pipeline step readiness"
+      ],
+      "invariants": [
+        "only one continuation timer is active",
+        "retryable blockers are retried before the pipeline pauses",
+        "provider jobs remain owned by workflow actions"
+      ],
+      "tests": [
+        "packages/renderer/src/tests/video-queue-orchestration.test.cjs",
+        "packages/renderer/src/tests/architecture-mapping.test.cjs",
+        "tests/e2e/studio.spec.ts"
+      ]
+    },
+    {
+      "id": "workflow-orchestration",
+      "path": "packages/workflow/src/orchestration",
+      "owner": "provider-neutral story, reference, retry, and video queue orchestration",
+      "entrypoints": [
+        "packages/workflow/src/orchestration/action-factories.ts",
+        "packages/workflow/src/orchestration/story-development-actions.ts",
+        "packages/workflow/src/orchestration/video-provider-actions.ts"
+      ],
+      "contracts": [
+        "@studio/types",
+        "@studio/protocol",
+        "renderer workflow contracts",
+        "typed bridge callbacks"
+      ],
+      "invariants": [
+        "orchestration is not React presentation",
+        "provider DOM and persistence remain outside workflow",
+        "renderer composes actions through the workflow boundary"
+      ],
+      "tests": [
+        "packages/renderer/src/tests/video-queue-orchestration.test.cjs",
+        "packages/renderer/src/tests/architecture-mapping.test.cjs"
+      ]
+    },
+    {
+      "id": "workflow-support-core",
+      "path": "packages/workflow/src/support-core.ts",
+      "owner": "workflow-owned pure support and bridge payload contracts",
+      "entrypoints": [
+        "@studio/workflow/support-core"
+      ],
+      "contracts": [
+        "@studio/types",
+        "@studio/protocol",
+        "Storage"
+      ],
+      "invariants": [
+        "no renderer implementation imports",
+        "no Electron or provider DOM ownership",
+        "shared payload and preflight contracts remain behaviorally compatible"
+      ],
+      "tests": [
+        "packages/renderer/src/tests/architecture-mapping.test.cjs",
+        "packages/renderer/src/tests/video-queue-orchestration.test.cjs"
+      ]
+    },
+    {
+      "id": "domain-shared-text",
+      "path": "packages/domain/src/text-support.ts",
+      "owner": "shared pure text, id, and slot normalization helpers",
+      "entrypoints": [
+        "@studio/domain/text-support"
+      ],
+      "contracts": [
+        "string",
+        "crypto.randomUUID"
+      ],
+      "invariants": [
+        "no renderer, workflow, Electron, or provider imports"
+      ],
+      "tests": [
+        "packages/renderer/src/tests/architecture-mapping.test.cjs"
+      ]
+    },
+    {
+      "id": "domain-conversation-url",
+      "path": "packages/domain/src/conversation-url.cjs",
+      "owner": "provider-neutral ChatGPT conversation identity validation",
+      "entrypoints": [
+        "packages/domain/src/conversation-url.cjs"
+      ],
+      "contracts": [
+        "saved chatgpt conversation URL predicate"
+      ],
+      "invariants": [
+        "only chatgpt.com /c/ URLs are accepted",
+        "transient WEB: conversations are rejected",
+        "no provider DOM or persistence dependency"
+      ],
+      "tests": [
+        "apps/extension/src/tests/provider-adapter-registry.test.cjs",
+        "apps/desktop/src/tests/architecture-contracts.test.cjs"
+      ]
+    },
+    {
+      "id": "domain-preflight-contract",
+      "path": "packages/domain/src/preflight-contract.ts",
+      "owner": "shared provider-neutral video preflight types",
+      "entrypoints": [
+        "@studio/domain/preflight-contract"
+      ],
+      "contracts": [
+        "VideoPreflightIssue",
+        "VideoPreflightValidation"
+      ],
+      "invariants": [
+        "type-only contract with no runtime imports"
+      ],
+      "tests": [
+        "packages/renderer/src/tests/architecture-mapping.test.cjs"
+      ]
+    },
+    {
+      "id": "domain-job-contracts",
+      "path": "packages/domain/src/job-contracts.ts",
+      "owner": "shared typed job payload and conversation lookup contracts",
+      "entrypoints": [
+        "@studio/domain/job-contracts"
+      ],
+      "contracts": [
+        "RunJobPayload",
+        "RunJobRequest",
+        "@studio/types"
+      ],
+      "invariants": [
+        "no renderer implementation imports",
+        "payload shape remains compatible with bridge dispatch",
+        "conversation lookup is read-only"
+      ],
+      "tests": [
+        "packages/renderer/src/tests/architecture-mapping.test.cjs",
+        "apps/desktop/src/tests"
+      ]
+    },
+    {
+      "id": "desktop-main",
+      "path": "apps/desktop/src/main",
+      "owner": "durable project state and job lifecycle",
+      "entrypoints": [
+        "apps/desktop/src/main/main.cjs"
+      ],
+      "contracts": [
+        "IPC",
+        "WebSocket bridge",
+        "SQLite projection",
+        "JSON snapshot"
+      ],
+      "invariants": [
+        "IPC state mutations pass through the state-store mutation boundary",
+        "persistence requests retain revision metadata"
+      ],
+      "tests": [
+        "apps/desktop/src/tests"
+      ]
+    },
+    {
+      "id": "desktop-main-runtime-utils",
+      "path": "apps/desktop/src/main/runtime-utils.cjs",
+      "owner": "pure runtime normalization and story-character materialization helpers",
+      "entrypoints": [
+        "apps/desktop/src/main/runtime-utils.cjs"
+      ],
+      "contracts": [
+        "story character package",
+        "stable voice profile",
+        "ChatGPT conversation URL"
+      ],
+      "invariants": [
+        "no Electron window or persistence ownership",
+        "helpers receive state and side effects explicitly",
+        "conversation URL validation rejects transient WEB ids"
+      ],
+      "tests": [
+        "apps/desktop/src/tests/architecture-contracts.test.cjs",
+        "apps/desktop/src/tests/job-lifecycle.test.cjs"
+      ]
+    },
+    {
+      "id": "desktop-media-recovery",
+      "path": "apps/desktop/src/main/media/{flow-recovery,flow-ownership,flow-blockers,media-server,media-persistence}.cjs",
+      "owner": "local media persistence, ownership quarantine, and HTTP serving",
+      "entrypoints": [
+        "apps/desktop/src/main/media/flow-recovery.cjs",
+        "apps/desktop/src/main/media/flow-ownership.cjs",
+        "apps/desktop/src/main/media/media-server.cjs"
+      ],
+      "contracts": [
+        "StudioState assets/jobs/shots",
+        "strict Flow ownership",
+        "studio media URL"
+      ],
+      "invariants": [
+        "recovery never submits a new provider job",
+        "Flow video is visible only after exact shot/job/start-frame ownership checks",
+        "media serving is restricted to dataRoot/downloads and supports byte ranges",
+        "data URLs are persisted as local files before state sync"
+      ],
+      "tests": [
+        "apps/desktop/src/tests/media-persistence.test.cjs",
+        "apps/desktop/src/tests/flow-recovery.test.cjs",
+        "apps/desktop/src/tests/architecture-contracts.test.cjs"
+      ]
+    },
+    {
+      "id": "desktop-state-persistence",
+      "path": "apps/desktop/src/main/state",
+      "owner": "desktop state persistence and schema evolution",
+      "entrypoints": [
+        "apps/desktop/src/main/state/persistence-writer.cjs",
+        "apps/desktop/src/main/state/migrations.cjs",
+        "apps/desktop/src/main/state/sqlite-projection.cjs"
+      ],
+      "contracts": [
+        "atomic JSON snapshot",
+        "SQLite projection",
+        "schema_migrations ledger"
+      ],
+      "invariants": [
+        "JSON writes use an atomic rename",
+        "SQLite projection sync is transactional",
+        "schema DDL and its ledger row commit atomically"
+      ],
+      "tests": [
+        "apps/desktop/src/tests/persistence-writer.test.cjs",
+        "apps/desktop/src/tests/state-migrations.test.cjs",
+        "packages/renderer/src/tests/architecture-mapping.test.cjs"
+      ]
+    },
+    {
+      "id": "extension-background",
+      "path": "apps/extension/src/background",
+      "owner": "provider-neutral job routing",
+      "entrypoints": [
+        "apps/extension/src/background/index.ts"
+      ],
+      "contracts": [
+        "BrowserProviderAdapter",
+        "RunJobRequest",
+        "JOB_RESULT envelope"
+      ],
+      "tests": [
+        "apps/extension/src/tests"
+      ]
+    },
+    {
+      "id": "extension-chatgpt-text-contract",
+      "path": "packages/extension-providers/src/chatgpt/text-normalization.ts",
+      "owner": "pure ChatGPT response normalization and balanced JSON extraction",
+      "entrypoints": [
+        "packages/extension-providers/src/chatgpt/text-normalization.ts"
+      ],
+      "contracts": [
+        "structured response text",
+        "balanced JSON candidate"
+      ],
+      "invariants": [
+        "no DOM, Chrome API, persistence, or provider submission",
+        "normalization preserves authored payload content while removing UI chrome",
+        "incomplete JSON is never reported complete"
+      ],
+      "tests": [
+        "apps/desktop/src/tests/structured-json.test.cjs",
+        "packages/renderer/src/tests/architecture-mapping.test.cjs"
+      ]
+    },
+    {
+      "id": "provider-adapters",
+      "path": "packages/extension-providers/src",
+      "owner": "provider-specific DOM automation",
+      "entrypoints": [
+        "packages/extension-providers/src/google-flow/content.ts",
+        "packages/extension-providers/src/google-flow/flow-page-errors.ts",
+        "packages/extension-providers/src/chatgpt/content.ts"
+      ],
+      "contracts": [
+        "BrowserProviderAdapter",
+        "provider tab ownership",
+        "pure page-error classification",
+        "strict recovery result"
+      ],
+      "tests": [
+        "apps/extension/src/tests/provider-adapter-contract.test.cjs"
+      ]
+    },
+    {
+      "id": "google-flow-composer-settings",
+      "path": "packages/extension-providers/src/google-flow/flow-composer-settings.ts",
+      "owner": "Google Flow composer settings policy and readiness boundary",
+      "entrypoints": [
+        "packages/extension-providers/src/google-flow/flow-composer-settings.ts"
+      ],
+      "contracts": [
+        "video source mode",
+        "aspect ratio",
+        "provider duration",
+        "composer readiness"
+      ],
+      "invariants": [
+        "settings selection remains provider-local",
+        "unsupported duration is mapped through the shared duration policy",
+        "no persistence or renderer ownership"
+      ],
+      "tests": [
+        "apps/extension/src/tests/provider-adapter-registry.test.cjs",
+        "tests/e2e/studio.spec.ts",
+        "packages/renderer/src/tests/architecture-mapping.test.cjs"
+      ]
+    },
+    {
+      "id": "google-flow-text-utils",
+      "path": "packages/extension-providers/src/google-flow/flow-text-utils.ts",
+      "owner": "pure Google Flow DOM text normalization primitives",
+      "entrypoints": [
+        "packages/extension-providers/src/google-flow/flow-text-utils.ts"
+      ],
+      "contracts": [
+        "visible DOM text",
+        "prompt editor text",
+        "normalized control label"
+      ],
+      "invariants": [
+        "no provider submission, storage, or job lifecycle ownership",
+        "normalization is deterministic and DOM-only"
+      ],
+      "tests": [
+        "tests/e2e/studio.spec.ts",
+        "packages/renderer/src/tests/architecture-mapping.test.cjs"
+      ]
+    },
+    {
+      "id": "google-flow-frame-dom",
+      "path": "packages/extension-providers/src/google-flow/flow-frame-dom.ts",
+      "owner": "DOM-only Flow frame-slot and drag-target discovery",
+      "entrypoints": [
+        "packages/extension-providers/src/google-flow/flow-frame-dom.ts"
+      ],
+      "contracts": [
+        "frame slot discovery",
+        "direct attachment count",
+        "composer drop targets"
+      ],
+      "invariants": [
+        "no provider submission or persistence ownership",
+        "all selectors are scoped to the visible Flow document",
+        "drag payload construction remains deterministic"
+      ],
+      "tests": [
+        "tests/e2e/studio.spec.ts",
+        "packages/renderer/src/tests/architecture-mapping.test.cjs"
+      ]
+    },
+    {
+      "id": "google-flow-reference-identity",
+      "path": "packages/extension-providers/src/google-flow/flow-reference-identity.ts",
+      "owner": "pure reference token, geometry, and image-fingerprint matching policy",
+      "entrypoints": [
+        "packages/extension-providers/src/google-flow/flow-reference-identity.ts"
+      ],
+      "contracts": [
+        "reference search tokens",
+        "scoped media geometry",
+        "image fingerprint distance"
+      ],
+      "invariants": [
+        "no DOM mutation, provider submission, or persistence ownership",
+        "matching is deterministic and rejects ambiguous geometry"
+      ],
+      "tests": [
+        "tests/e2e/studio.spec.ts",
+        "packages/renderer/src/tests/architecture-mapping.test.cjs"
+      ]
+    },
+    {
+      "id": "extension-provider-package",
+      "path": "packages/extension-providers/src",
+      "owner": "isolated browser provider content scripts",
+      "entrypoints": [
+        "packages/extension-providers/src/google-flow/content.ts",
+        "packages/extension-providers/src/chatgpt/content.ts"
+      ],
+      "contracts": [
+        "provider DOM adapter contract",
+        "strict recovery result"
+      ],
+      "invariants": [
+        "content scripts do not own background job persistence",
+        "provider selectors stay inside provider package"
+      ],
+      "tests": [
+        "apps/extension/src/tests/provider-adapter-contract.test.cjs"
+      ]
+    },
+    {
+      "id": "extension-flow-main-world-actions",
+      "path": "apps/extension/src/background/flow-main-world-actions.ts",
+      "owner": "isolated Google Flow main-world DOM action function",
+      "entrypoints": [
+        "apps/extension/src/background/flow-main-world-actions.ts"
+      ],
+      "contracts": [
+        "MAIN_WORLD_FLOW_ACTION",
+        "visible Flow target"
+      ],
+      "invariants": [
+        "DOM click only; no job persistence or provider routing",
+        "unknown actions fail closed"
+      ],
+      "tests": [
+        "apps/extension/src/tests/provider-adapter-contract.test.cjs",
+        "packages/renderer/src/tests/architecture-mapping.test.cjs"
+      ]
+    },
+    {
+      "id": "renderer-flow-text-document",
+      "path": "packages/renderer/src/studio-canvas.tsx",
+      "owner": "production graph text-node editing and revision UI",
+      "entrypoints": [
+        "packages/renderer/src/studio-canvas.tsx"
+      ],
+      "contracts": [
+        "FlowDocument text node",
+        "revision restore",
+        "inline guidance"
+      ],
+      "invariants": [
+        "text node owns draft UI only",
+        "revision actions are delegated callbacks",
+        "no provider or persistence ownership"
+      ],
+      "tests": [
+        "tests/e2e/studio-browser.spec.ts",
+        "packages/renderer/src/tests/architecture-mapping.test.cjs"
+      ]
+    },
+    {
+      "id": "renderer-application-presentations",
+      "path": "packages/renderer/src/studio-application-presentations.ts",
+      "owner": "pure renderer navigation, board, and active-job presentation derivation",
+      "entrypoints": [
+        "packages/renderer/src/studio-application-presentations.ts"
+      ],
+      "contracts": [
+        "StudioView",
+        "PipelineStepId",
+        "project summaries",
+        "active pipeline jobs"
+      ],
+      "invariants": [
+        "no React state, provider DOM, persistence, or job mutation ownership",
+        "sorting and presentation derivations are deterministic",
+        "application model remains the composition owner"
+      ],
+      "tests": [
+        "packages/renderer/src/tests/architecture-mapping.test.cjs",
+        "packages/renderer/src/tests/pipeline-runtime.test.cjs"
+      ]
+    },
+    {
+      "id": "renderer-application-pipeline-view",
+      "path": "packages/renderer/src/studio-application-pipeline-view.ts",
+      "owner": "pure renderer pipeline metrics and blocking presentation derivation",
+      "entrypoints": [
+        "packages/renderer/src/studio-application-pipeline-view.ts"
+      ],
+      "contracts": [
+        "pipeline readiness",
+        "job blocking state",
+        "preflight presentation"
+      ],
+      "invariants": [
+        "no React state, provider DOM, persistence, or job mutation ownership",
+        "pipeline blocking and retry classification remain deterministic",
+        "application orchestration supplies callbacks and owns side effects"
+      ],
+      "tests": [
+        "packages/renderer/src/tests/pipeline-runtime.test.cjs",
+        "packages/renderer/src/tests/architecture-mapping.test.cjs"
+      ]
+    },
+    {
+      "id": "renderer-reference-domain",
+      "path": "packages/renderer/src/studio-reference-domain.ts",
+      "owner": "renderer reference generation, upload, and recovery composition hook",
+      "entrypoints": [
+        "packages/renderer/src/studio-reference-domain.ts"
+      ],
+      "contracts": [
+        "reference action dependencies",
+        "reference generation dependencies",
+        "reference effects"
+      ],
+      "invariants": [
+        "reference actions remain project-scoped",
+        "provider and persistence side effects enter through injected actions",
+        "application model remains the compatibility composition root"
+      ],
+      "tests": [
+        "packages/renderer/src/tests/pipeline-runtime.test.cjs",
+        "packages/renderer/src/tests/architecture-mapping.test.cjs"
+      ]
+    },
+    {
+      "id": "renderer-pipeline-domain",
+      "path": "packages/renderer/src/studio-pipeline-domain.ts",
+      "owner": "renderer retry and YOLO continuation composition hook",
+      "entrypoints": [
+        "packages/renderer/src/studio-pipeline-domain.ts"
+      ],
+      "contracts": [
+        "retry action dependencies",
+        "pipeline continuation effects"
+      ],
+      "invariants": [
+        "retry remains serial and idempotent",
+        "late provider results are recovered through the existing action policy",
+        "pipeline controls delegate pause/cancel/YOLO transitions through injected callbacks",
+        "domain hook does not own persistence or provider DOM"
+      ],
+      "tests": [
+        "packages/renderer/src/tests/pipeline-runtime.test.cjs",
+        "packages/renderer/src/tests/video-queue-orchestration.test.cjs",
+        "packages/renderer/src/tests/architecture-mapping.test.cjs"
+      ]
+    },
+    {
+      "id": "renderer-application-composition",
+      "path": "packages/renderer/src/studio-application-composition.ts",
+      "owner": "dependency-injected application composition helpers",
+      "entrypoints": [
+        "packages/renderer/src/studio-application-composition.ts"
+      ],
+      "contracts": [
+        "story actions",
+        "media/prompt actions",
+        "pipeline presentation",
+        "review commands"
+      ],
+      "invariants": [
+        "no workflow/provider/persistence imports",
+        "all side effects arrive through injected callbacks",
+        "application model remains the React composition root"
+      ],
+      "tests": [
+        "packages/renderer/src/tests/architecture-mapping.test.cjs",
+        "packages/renderer/src/tests/pipeline-runtime.test.cjs",
+        "pnpm typecheck"
+      ]
+    },
+    {
+      "id": "renderer-content-composition",
+      "path": "packages/renderer/src/studio-application.tsx",
+      "owner": "renderer screen registry and content composition",
+      "entrypoints": [
+        "packages/renderer/src/studio-application.tsx"
+      ],
+      "contracts": [
+        "StudioView",
+        "StudioApplicationContext",
+        "screen registry"
+      ],
+      "invariants": [
+        "screen registry owns composition only",
+        "screens consume the compatibility context without provider or persistence ownership",
+        "application shell retains layout and overlay ownership"
+      ],
+      "tests": [
+        "tests/e2e/studio-browser.spec.ts",
+        "packages/renderer/src/tests/architecture-mapping.test.cjs"
+      ]
+    },
+    {
+      "id": "renderer-application-contract",
+      "path": "packages/renderer/src/studio-application-context.tsx",
+      "owner": "renderer model contract and React context boundary",
+      "entrypoints": [
+        "packages/renderer/src/studio-application-context.tsx"
+      ],
+      "contracts": [
+        "StudioApplicationModel",
+        "CanvasDocument",
+        "PipelineStepItem"
+      ],
+      "invariants": [
+        "model contract is co-located with the context boundary",
+        "context owns React provider construction",
+        "workflow and persistence remain outside the renderer contract"
+      ],
+      "tests": [
+        "packages/renderer/src/tests/architecture-mapping.test.cjs",
+        "pnpm typecheck"
+      ]
+    },
+    {
+      "id": "renderer-storyboard-side-panels",
+      "path": "packages/renderer/src/{storyboard-script-panel,storyboard-scene-panel,storyboard-shot-panel}.tsx",
+      "owner": "storyboard script, scene, and shot editing panels",
+      "entrypoints": [
+        "packages/renderer/src/storyboard-script-panel.tsx",
+        "packages/renderer/src/storyboard-scene-panel.tsx",
+        "packages/renderer/src/storyboard-shot-panel.tsx"
+      ],
+      "contracts": [
+        "story document editing",
+        "scene continuity fields",
+        "shot dialogue/camera/action-beat fields"
+      ],
+      "invariants": [
+        "panels mutate through application context callbacks",
+        "stage selection remains owned by StoryboardSideContext",
+        "no persistence or provider DOM ownership"
+      ],
+      "tests": [
+        "pnpm typecheck:desktop",
+        "pnpm test:unit",
+        "packages/renderer/src/tests/architecture-mapping.test.cjs"
+      ]
+    },
+    {
+      "id": "renderer-source-screen",
+      "path": "packages/renderer/src/source-screen.tsx",
+      "owner": "source-bin screen composition",
+      "entrypoints": [
+        "packages/renderer/src/source-screen.tsx",
+        "packages/renderer/src/studio-application.tsx"
+      ],
+      "contracts": [
+        "project assets",
+        "scene/shot grouping",
+        "source library view"
+      ],
+      "invariants": [
+        "screen reads application context only",
+        "source library owns asset grouping and interaction",
+        "no provider DOM or persistence ownership"
+      ],
+      "tests": [
+        "pnpm typecheck:desktop",
+        "pnpm test:unit",
+        "packages/renderer/src/tests/architecture-mapping.test.cjs"
+      ]
+    },
+    {
+      "id": "renderer-screen-registries",
+      "path": "packages/renderer/src/{studio-overlays,studio-narrative-screens}.tsx",
+      "owner": "narrow renderer screen/overlay registries",
+      "entrypoints": [
+        "packages/renderer/src/studio-overlays.tsx",
+        "packages/renderer/src/studio-narrative-screens.tsx"
+      ],
+      "contracts": [
+        "screen component exports",
+        "overlay component exports"
+      ],
+      "invariants": [
+        "registries export components only",
+        "GenerateScreen, ReviewScreen, and StoryboardScreen remain on the direct application path for depth control",
+        "no state or provider ownership"
+      ],
+      "tests": [
+        "pnpm typecheck:desktop",
+        "pnpm test:unit",
+        "packages/renderer/src/tests/architecture-mapping.test.cjs"
+      ]
+    },
+    {
+      "id": "renderer-overlay-contracts",
+      "path": "packages/renderer/src/studio-overlay-contracts.ts",
+      "owner": "renderer overlay prop contracts",
+      "entrypoints": [
+        "packages/renderer/src/studio-overlay-contracts.ts"
+      ],
+      "contracts": [
+        "upload preview",
+        "project manager",
+        "app manager",
+        "generated asset preview",
+        "reference editor"
+      ],
+      "invariants": [
+        "contracts are type-only and import no runtime state",
+        "overlays receive only fields they render or mutate",
+        "context remains the single composition owner"
+      ],
+      "tests": [
+        "packages/renderer/src/tests/architecture-mapping.test.cjs",
+        "pnpm typecheck",
+        "pnpm test:unit"
+      ]
+    },
+    {
+      "id": "renderer-provider-composition",
+      "path": "packages/renderer/src/studio-application-provider-composition.ts",
+      "owner": "renderer provider-action composition boundary",
+      "entrypoints": [
+        "packages/renderer/src/studio-application-provider-composition.ts"
+      ],
+      "contracts": [
+        "provider action factory input",
+        "video provider action lifecycle"
+      ],
+      "invariants": [
+        "factory is pure composition and owns no React state",
+        "provider actions retain injected lifecycle callbacks",
+        "application model remains the only state owner"
+      ],
+      "tests": [
+        "packages/renderer/src/tests/architecture-mapping.test.cjs",
+        "pnpm typecheck",
+        "pnpm test:unit"
+      ]
+    },
+    {
+      "id": "renderer-media-primitives",
+      "path": "packages/renderer/src/renderer-media-primitives.ts",
+      "owner": "renderer preview media URL primitives",
+      "entrypoints": [
+        "packages/renderer/src/renderer-media-primitives.ts"
+      ],
+      "contracts": [
+        "preview/poster/file-path selection"
+      ],
+      "invariants": [
+        "pure media URL selection",
+        "no shared type barrel or persistence/provider ownership"
+      ],
+      "tests": [
+        "pnpm typecheck:desktop",
+        "pnpm test:unit",
+        "packages/renderer/src/tests/architecture-mapping.test.cjs"
+      ]
+    },
+    {
+      "id": "renderer-canvas-layout",
+      "path": "packages/renderer/src/studio-canvas-layout.ts",
+      "owner": "pure spatial production graph layout and canvas node derivation",
+      "entrypoints": [
+        "packages/renderer/src/studio-canvas-layout.ts"
+      ],
+      "contracts": [
+        "referenceCategory",
+        "buildSpatialFlow"
+      ],
+      "invariants": [
+        "layout derivation has no React state or provider DOM",
+        "canvas shell owns viewport and interaction state",
+        "graph transitions preserve stage and lineage edges"
+      ],
+      "tests": [
+        "packages/renderer/src/tests/architecture-mapping.test.cjs",
+        "pnpm typecheck",
+        "pnpm test:unit"
+      ]
+    },
+    {
+      "id": "shared-protocol",
+      "path": "packages/protocol/src",
+      "owner": "cross-process request contracts",
+      "entrypoints": [
+        "@studio/protocol",
+        "@studio/protocol/job-request"
+      ],
+      "contracts": [
+        "RunJobRequest",
+        "ConnectionEnvelopeV2",
+        "ProviderCommandDestinationV2"
+      ],
+      "tests": [
+        "packages/protocol/src/tests",
+        "apps/desktop/src/tests"
+      ]
+    },
+    {
+      "id": "shared-job-request",
+      "path": "packages/types/src/job-request.ts",
+      "owner": "canonical cross-process job request contract",
+      "entrypoints": [
+        "@studio/types/job-request"
+      ],
+      "contracts": [
+        "RunJobRequest"
+      ],
+      "invariants": [
+        "domain and protocol consume one structural request contract",
+        "protocol entrypoint is compatibility-only",
+        "contract contains no provider DOM or persistence implementation"
+      ],
+      "tests": [
+        "apps/desktop/src/tests",
+        "packages/renderer/src/tests/architecture-mapping.test.cjs",
+        "pnpm typecheck"
+      ]
+    },
+    {
+      "id": "domain-duration-policy",
+      "path": "packages/domain/src/duration-policy.ts",
+      "owner": "provider duration planning policy",
+      "entrypoints": [
+        "@studio/domain/duration-policy"
+      ],
+      "contracts": [
+        "ProviderVideoDurationPolicy",
+        "duration ladder",
+        "weighted shot planning"
+      ],
+      "invariants": [
+        "duration planning is pure and provider-neutral",
+        "unsupported providers retain requested duration",
+        "protocol and UI do not own narrative duration decisions"
+      ],
+      "tests": [
+        "packages/renderer/src/tests/pipeline-runtime.test.cjs",
+        "pnpm test:unit",
+        "pnpm typecheck"
+      ]
+    },
+    {
+      "id": "google-flow-selector-contract",
+      "path": "packages/extension-providers/src/google-flow/flow-selectors.ts",
+      "owner": "Google Flow provider DOM selector vocabulary",
+      "entrypoints": [
+        "packages/extension-providers/src/google-flow/flow-selectors.ts"
+      ],
+      "contracts": [
+        "prompt editor",
+        "media result",
+        "composer controls",
+        "workspace hints"
+      ],
+      "invariants": [
+        "selector definitions are provider-local",
+        "no renderer state or persistence ownership",
+        "content adapter remains responsible for DOM timing and recovery"
+      ],
+      "tests": [
+        "pnpm typecheck",
+        "pnpm build:extension",
+        "pnpm architecture:map"
+      ]
+    },
+    {
+      "id": "google-flow-reference-ledger",
+      "path": "packages/extension-providers/src/google-flow/flow-reference-ledger.ts",
+      "owner": "Google Flow reference fingerprint, project cache, and upload ledger",
+      "entrypoints": [
+        "packages/extension-providers/src/google-flow/flow-reference-ledger.ts"
+      ],
+      "contracts": [
+        "reference fingerprint",
+        "project-scoped cache",
+        "duplicate-upload ledger"
+      ],
+      "invariants": [
+        "cache and ledger remain provider-local",
+        "project path scopes entries",
+        "no renderer state or persistence ownership",
+        "DOM adapter supplies media and token dependencies"
+      ],
+      "tests": [
+        "pnpm typecheck",
+        "pnpm build:extension",
+        "pnpm architecture:map"
+      ]
+    },
+    {
+      "id": "google-flow-result-media",
+      "path": "packages/extension-providers/src/google-flow/flow-result-policy.ts",
+      "owner": "Google Flow result identity and media classification policy",
+      "entrypoints": [
+        "packages/extension-providers/src/google-flow/flow-result-policy.ts"
+      ],
+      "contracts": [
+        "video media detection",
+        "image-only result guard",
+        "result tile media visibility"
+      ],
+      "invariants": [
+        "pure provider-local policy with injected DOM readers",
+        "image tiles never satisfy video completion",
+        "no renderer state, persistence, or job lifecycle ownership"
+      ],
+      "tests": [
+        "pnpm typecheck",
+        "pnpm build:extension",
+        "pnpm architecture:map"
+      ]
+    },
+    {
+      "id": "google-flow-result-recovery",
+      "path": "packages/extension-providers/src/google-flow/flow-result-recovery.ts",
+      "owner": "Google Flow result capture, late hydration, and strict recovery",
+      "entrypoints": [
+        "packages/extension-providers/src/google-flow/flow-result-recovery.ts"
+      ],
+      "contracts": [
+        "current-job tile ownership",
+        "image-only video rejection",
+        "late-hydration recovery",
+        "serial result reporting"
+      ],
+      "invariants": [
+        "fresh baseline identity is required before attaching media",
+        "recovery never resubmits an accepted prompt",
+        "provider result effects are injected",
+        "no renderer state or persistence ownership"
+      ],
+      "tests": [
+        "apps/extension/src/tests/flow-result-policy.test.cjs",
+        "pnpm typecheck",
+        "pnpm build:extension",
+        "pnpm architecture:map"
+      ]
+    },
+    {
+      "id": "google-flow-composer-dom",
+      "path": "packages/extension-providers/src/google-flow/flow-composer-dom.ts",
+      "owner": "Google Flow composer route, settings, and mode DOM orchestration",
+      "entrypoints": [
+        "packages/extension-providers/src/google-flow/flow-composer-dom.ts"
+      ],
+      "contracts": [
+        "composer route readiness",
+        "video mode settings",
+        "bounded settings clicks",
+        "agent shell guard"
+      ],
+      "invariants": [
+        "DOM timing and recovery stay provider-local",
+        "composer policy remains injected",
+        "no renderer state, persistence, or job lifecycle ownership"
+      ],
+      "tests": [
+        "pnpm typecheck",
+        "pnpm build:extension",
+        "pnpm architecture:map"
+      ]
+    },
+    {
+      "id": "google-flow-composer-surface",
+      "path": "packages/extension-providers/src/google-flow/flow-composer-surface.ts",
+      "owner": "Google Flow composer surface discovery and attachment inspection",
+      "entrypoints": [
+        "packages/extension-providers/src/google-flow/flow-composer-surface.ts"
+      ],
+      "contracts": [
+        "active prompt editor",
+        "composer root",
+        "composer panel",
+        "prompt attachment evidence"
+      ],
+      "invariants": [
+        "surface discovery is provider-local and DOM-only",
+        "attachment evidence is scoped to the visible composer",
+        "no renderer state, persistence, or job lifecycle ownership"
+      ],
+      "tests": [
+        "pnpm typecheck",
+        "pnpm build:extension",
+        "pnpm architecture:map"
+      ]
+    },
+    {
+      "id": "google-flow-reference-search",
+      "path": "packages/extension-providers/src/google-flow/flow-reference-search.ts",
+      "owner": "Google Flow reference candidate search and visual identity matching",
+      "entrypoints": [
+        "packages/extension-providers/src/google-flow/flow-reference-search.ts"
+      ],
+      "contracts": [
+        "reference token search",
+        "visual fingerprint matching",
+        "exact library tile reuse"
+      ],
+      "invariants": [
+        "reference matching remains project/provider-local",
+        "visual fallback never weakens exact identity guards",
+        "no renderer state or persistence ownership"
+      ],
+      "tests": [
+        "pnpm typecheck",
+        "pnpm build:extension",
+        "pnpm architecture:map"
+      ]
+    },
+    {
+      "id": "google-flow-native-input",
+      "path": "packages/extension-providers/src/google-flow/flow-native-input.ts",
+      "owner": "Google Flow native click, file input, and drag/drop transport",
+      "entrypoints": [
+        "packages/extension-providers/src/google-flow/flow-native-input.ts"
+      ],
+      "contracts": [
+        "native click transport",
+        "file input upload",
+        "composer drag/drop"
+      ],
+      "invariants": [
+        "DOM fallback remains explicit and bounded",
+        "provider transport owns no renderer state or persistence",
+        "reference attachment waits for observed composer evidence"
+      ],
+      "tests": [
+        "pnpm typecheck",
+        "pnpm build:extension",
+        "pnpm architecture:map"
+      ]
+    },
+    {
+      "id": "google-flow-runtime-boundaries",
+      "path": "packages/extension-providers/src/google-flow/flow-runtime-boundaries.ts",
+      "owner": "Google Flow provider runtime boundary facade",
+      "entrypoints": [
+        "packages/extension-providers/src/google-flow/flow-runtime-boundaries.ts"
+      ],
+      "contracts": [
+        "composer DOM",
+        "reference search",
+        "native input"
+      ],
+      "invariants": [
+        "content adapter imports one provider-local runtime facade",
+        "facade re-exports contracts without owning state or DOM timing"
+      ],
+      "tests": [
+        "pnpm typecheck",
+        "pnpm build:extension",
+        "pnpm architecture:map"
+      ]
+    },
+    {
+      "id": "google-flow-direct-bridge",
+      "path": "packages/extension-providers/src/google-flow/flow-direct-bridge.ts",
+      "owner": "Google Flow direct bridge lifecycle and message transport",
+      "entrypoints": [
+        "packages/extension-providers/src/google-flow/flow-direct-bridge.ts"
+      ],
+      "contracts": [
+        "EXTENSION_HELLO",
+        "RUN_JOB",
+        "CANCEL_JOB",
+        "provider visibility"
+      ],
+      "invariants": [
+        "bridge transport owns socket lifecycle only",
+        "job execution and cancellation remain injected callbacks",
+        "no renderer state or persistence ownership"
+      ],
+      "tests": [
+        "apps/extension/src/tests",
+        "pnpm typecheck:extension",
+        "pnpm build:extension"
+      ]
+    },
+    {
+      "id": "renderer-pipeline-rail",
+      "path": "packages/renderer/src/studio-pipeline-rail.tsx",
+      "owner": "pipeline rail presentation and user-facing YOLO status controls",
+      "entrypoints": [
+        "packages/renderer/src/studio-pipeline-rail.tsx"
+      ],
+      "contracts": [
+        "pipeline status",
+        "retry controls",
+        "quick setup inputs",
+        "provider signal"
+      ],
+      "invariants": [
+        "rail emits callbacks and does not mutate state directly",
+        "retry and YOLO decisions remain owned by the application model",
+        "provider DOM and persistence stay outside the component"
+      ],
+      "tests": [
+        "packages/renderer/src/tests/architecture-mapping.test.cjs",
+        "pnpm test:unit",
+        "pnpm typecheck"
+      ]
+    },
+    {
+      "id": "workflow-story-foundation-prompts",
+      "path": "packages/workflow/src/story-foundation-prompts.ts",
+      "owner": "foundation and scene-architecture prompt contracts",
+      "entrypoints": [
+        "packages/workflow/src/story-foundation-prompts.ts"
+      ],
+      "contracts": [
+        "story foundation",
+        "narrative contract",
+        "scene architecture"
+      ],
+      "invariants": [
+        "foundation never emits scenes, screenplay, shots, or provider prompts",
+        "architecture consumes immutable foundation decisions",
+        "prompt construction remains provider-neutral"
+      ],
+      "tests": [
+        "packages/renderer/src/tests/pipeline-runtime.test.cjs",
+        "pnpm test:unit",
+        "pnpm typecheck"
+      ]
+    },
+    {
+      "id": "workflow-story-scene-prompts",
+      "path": "packages/workflow/src/story-scene-prompts.ts",
+      "owner": "screenplay and shot prompt contracts",
+      "entrypoints": [
+        "packages/workflow/src/story-scene-prompts.ts"
+      ],
+      "contracts": [
+        "screenplay scene",
+        "shot breakdown",
+        "cue ownership",
+        "duration budget"
+      ],
+      "invariants": [
+        "screenplay preserves locked scene contract",
+        "shot breakdown does not rewrite dialogue or story facts",
+        "provider duration constraints remain explicit"
+      ],
+      "tests": [
+        "packages/renderer/src/tests/pipeline-runtime.test.cjs",
+        "pnpm test:unit",
+        "pnpm typecheck"
+      ]
+    },
+    {
+      "id": "renderer-storyboard-side-context",
+      "path": "packages/renderer/src/studio-storyboard-side-context.tsx",
+      "owner": "storyboard scene/shot editing context",
+      "entrypoints": [
+        "packages/renderer/src/studio-storyboard-side-context.tsx"
+      ],
+      "contracts": [
+        "useStudioApplicationContext",
+        "scene contract",
+        "shot continuity and speech contract"
+      ],
+      "invariants": [
+        "storyboard editing remains a renderer presentation boundary",
+        "scene and shot edits flow through injected application actions",
+        "no provider DOM, persistence, or job lifecycle ownership"
+      ],
+      "tests": [
+        "packages/renderer/src/tests/architecture-mapping.test.cjs",
+        "pnpm typecheck",
+        "pnpm test:unit"
+      ]
+    },
+    {
+      "id": "renderer-shot-review-card",
+      "path": "packages/renderer/src/views/shot-review-views.tsx",
+      "owner": "shot review presentation and video readiness controls",
+      "entrypoints": [
+        "packages/renderer/src/views/shot-review-views.tsx"
+      ],
+      "contracts": [
+        "Shot",
+        "Asset",
+        "AutomationJob",
+        "VideoPreflightValidation",
+        "VideoEditorialReview"
+      ],
+      "invariants": [
+        "review components emit callbacks and do not mutate state directly",
+        "preflight and retry controls remain provider-neutral",
+        "accepted video review and history remain delegated to injected actions"
+      ],
+      "tests": [
+        "packages/renderer/src/tests/pipeline-runtime.test.cjs",
+        "pnpm typecheck",
+        "pnpm test:unit"
+      ]
+    },
+    {
+      "id": "renderer-reference-editor",
+      "path": "packages/renderer/src/overlays/selected-reference.tsx",
+      "owner": "reference media/profile editing presentation",
+      "entrypoints": [
+        "packages/renderer/src/overlays/selected-reference.tsx"
+      ],
+      "contracts": [
+        "VisualReference",
+        "reference revision actions",
+        "reference profile actions"
+      ],
+      "invariants": [
+        "overlay presentation emits injected actions only",
+        "reference identity and profile changes remain project-scoped",
+        "provider DOM and persistence stay outside the overlay"
+      ],
+      "tests": [
+        "packages/renderer/src/tests/architecture-mapping.test.cjs",
+        "pnpm typecheck",
+        "pnpm test:unit"
+      ]
+    },
+    {
+      "id": "desktop-export-sequence",
+      "path": "apps/desktop/src/main/export-sequence-handler.cjs",
+      "owner": "desktop sequence export orchestration",
+      "entrypoints": [
+        "apps/desktop/src/main/export-sequence-handler.cjs"
+      ],
+      "contracts": [
+        "persisted edit sequence",
+        "export manifest",
+        "local AVFoundation job"
+      ],
+      "invariants": [
+        "audio clip normalization is pure and injected",
+        "export handler owns process lifecycle only",
+        "renderer and provider DOM remain outside desktop main"
+      ],
+      "tests": [
+        "apps/desktop/src/tests",
+        "pnpm typecheck:desktop",
+        "pnpm test:unit"
+      ]
+    },
+    {
+      "id": "desktop-save-asset",
+      "path": "apps/desktop/src/main/save-asset-handler.cjs",
+      "owner": "desktop asset save transport",
+      "entrypoints": [
+        "apps/desktop/src/main/save-asset-handler.cjs"
+      ],
+      "contracts": [
+        "asset/reference lookup",
+        "save dialog",
+        "local or remote media source"
+      ],
+      "invariants": [
+        "source resolution is isolated from IPC registration",
+        "filesystem writes remain dependency-injected",
+        "renderer state is read-only at save time"
+      ],
+      "tests": [
+        "apps/desktop/src/tests",
+        "pnpm typecheck:desktop",
+        "pnpm test:unit"
+      ]
+    },
+    {
+      "id": "desktop-shot-timing",
+      "path": "apps/desktop/src/main/shot-timing.cjs",
+      "owner": "provider-neutral shot timing and causal beat validation",
+      "entrypoints": [
+        "apps/desktop/src/main/shot-timing.cjs"
+      ],
+      "contracts": [
+        "action beats",
+        "dialogue ownership",
+        "causal ordering",
+        "provider duration"
+      ],
+      "invariants": [
+        "normalized beats are contiguous and duration-complete",
+        "each action cue has one timed owner",
+        "timing validation does not depend on provider DOM"
+      ],
+      "tests": [
+        "apps/desktop/src/tests",
+        "pnpm typecheck:desktop",
+        "pnpm test:unit"
+      ]
+    },
+    {
+      "id": "chatgpt-structured-recovery",
+      "path": "packages/extension-providers/src/chatgpt/structured-recovery.ts",
+      "owner": "ChatGPT structured response validation and balanced JSON recovery",
+      "entrypoints": [
+        "packages/extension-providers/src/chatgpt/structured-recovery.ts"
+      ],
+      "contracts": [
+        "story foundation",
+        "story architecture",
+        "screenplay scene",
+        "shot breakdown"
+      ],
+      "invariants": [
+        "balanced JSON is required before task validation",
+        "schema echo placeholders are rejected",
+        "DOM and provider timing remain outside the pure parser"
+      ],
+      "tests": [
+        "apps/extension/src/tests",
+        "pnpm typecheck:extension",
+        "pnpm test:unit"
+      ]
+    },
+    {
+      "id": "google-flow-media-picker-options",
+      "path": "packages/extension-providers/src/google-flow/flow-media-picker-options.ts",
+      "owner": "Google Flow media picker candidate discovery and deterministic ordering",
+      "entrypoints": [
+        "packages/extension-providers/src/google-flow/flow-media-picker-options.ts"
+      ],
+      "contracts": [
+        "picker geometry",
+        "asset filename identity",
+        "start-frame option ordering"
+      ],
+      "invariants": [
+        "only visible in-picker media candidates are returned",
+        "control rows are excluded",
+        "ordering is deterministic and provider-local"
+      ],
+      "tests": [
+        "apps/extension/src/tests",
+        "pnpm typecheck:extension",
+        "pnpm test:unit"
+      ]
+    },
+    {
+      "id": "google-flow-result-tiles",
+      "path": "packages/extension-providers/src/google-flow/flow-result-tiles.ts",
+      "owner": "Google Flow visible result tile and media readiness inspection",
+      "entrypoints": [
+        "packages/extension-providers/src/google-flow/flow-result-tiles.ts"
+      ],
+      "contracts": [
+        "visible image tile",
+        "ready media",
+        "busy tile exclusion",
+        "deduplicated tile identity"
+      ],
+      "invariants": [
+        "busy or non-media tiles never enter reference search",
+        "tile readiness is provider-DOM only",
+        "result inspection is injected and side-effect free"
+      ],
+      "tests": [
+        "apps/extension/src/tests",
+        "pnpm typecheck:extension",
+        "pnpm test:unit"
+      ]
+    },
+    {
+      "id": "domain-text-contracts",
+      "path": "packages/domain/src/{labels,layout,identifiers}.ts",
+      "owner": "pure domain text, orientation, and identifier contracts",
+      "entrypoints": [
+        "packages/domain/src/labels.ts",
+        "packages/domain/src/layout.ts",
+        "packages/domain/src/identifiers.ts"
+      ],
+      "contracts": [
+        "formatLabel/statusLabel",
+        "frameOrientation",
+        "normalizeSlotName/makeId"
+      ],
+      "invariants": [
+        "helpers are pure and provider/UI independent",
+        "workflow consumers import the narrow subpath",
+        "text-support facade preserves compatibility exports"
+      ],
+      "tests": [
+        "packages/domain/src/tests",
+        "pnpm typecheck",
+        "pnpm test:unit"
+      ]
+    },
+    {
+      "id": "extension-job-types",
+      "path": "apps/extension/src/background/job-types.ts",
+      "owner": "extension durable job and result payload contract",
+      "entrypoints": [
+        "apps/extension/src/background/job-types.ts"
+      ],
+      "contracts": [
+        "StudioJob",
+        "ToolJobPayload",
+        "ResultAsset",
+        "FlowCaptureResponse"
+      ],
+      "invariants": [
+        "payload types contain no DOM or provider side effects",
+        "background dispatch and result handlers share one job contract",
+        "all background job/result consumers import the canonical job-types contract"
+      ],
+      "tests": [
+        "apps/extension/src/tests",
+        "pnpm typecheck:extension",
+        "pnpm test:unit"
+      ]
+    },
+    {
+      "id": "workflow-bridge-contract",
+      "path": "packages/workflow/src/workflow-bridge.ts",
+      "owner": "injectable workflow-to-desktop bridge contract",
+      "entrypoints": [
+        "packages/workflow/src/workflow-bridge.ts"
+      ],
+      "contracts": [
+        "WorkflowBridge",
+        "configureWorkflowBridge",
+        "getWorkflowBridge"
+      ],
+      "invariants": [
+        "workflow modules do not access window.studioBridge directly",
+        "renderer configures the bridge at the application boundary",
+        "Node tests can inject a fake bridge without a DOM global"
+      ],
+      "tests": [
+        "packages/renderer/src/tests/workflow-bridge-contract.test.cjs",
+        "pnpm typecheck",
+        "pnpm test:unit"
+      ]
+    },
+    {
+      "id": "renderer-runtime-id",
+      "path": "packages/renderer/src/core/runtime-id.ts",
+      "owner": "renderer-local runtime identifier and presentation labels",
+      "entrypoints": [
+        "packages/renderer/src/core/runtime-id.ts"
+      ],
+      "contracts": [
+        "stable runtime id",
+        "label formatting",
+        "frame orientation"
+      ],
+      "invariants": [
+        "identifier generation remains renderer-local",
+        "no UI dependency on domain text utilities",
+        "presentation helpers remain pure"
+      ],
+      "tests": [
+        "packages/renderer/src/tests",
+        "pnpm typecheck",
+        "pnpm test:unit"
+      ]
+    },
+    {
+      "id": "renderer-ui-format",
+      "path": "packages/renderer/src/core/ui-format.ts",
+      "owner": "renderer-local labels, statuses, and aspect orientation",
+      "entrypoints": [
+        "packages/renderer/src/core/ui-format.ts"
+      ],
+      "contracts": [
+        "presentation labels",
+        "status labels",
+        "frame orientation"
+      ],
+      "invariants": [
+        "formatting is pure and renderer-owned",
+        "UI formatting has no domain import",
+        "provider and persistence layers remain outside"
+      ],
+      "tests": [
+        "packages/renderer/src/tests",
+        "pnpm typecheck",
+        "pnpm test:unit"
+      ]
+    },
+    {
+      "id": "renderer-entity-key",
+      "path": "packages/renderer/src/core/entity-key.ts",
+      "owner": "renderer-local stable reference/entity slot normalization",
+      "entrypoints": [
+        "packages/renderer/src/core/entity-key.ts"
+      ],
+      "contracts": [
+        "normalized slot key"
+      ],
+      "invariants": [
+        "normalization is pure and deterministic",
+        "renderer identity does not import domain text helpers"
+      ],
+      "tests": [
+        "packages/renderer/src/tests",
+        "pnpm typecheck",
+        "pnpm test:unit"
+      ]
+    },
+    {
+      "id": "google-flow-executor-selection",
+      "path": "apps/extension/src/background/flow-executor-selection.cjs",
+      "owner": "Google Flow per-job executor selection",
+      "entrypoints": [
+        "apps/extension/src/background/flow-executor-selection.cjs",
+        "apps/extension/src/background/job-coordinator.ts"
+      ],
+      "contracts": [
+        "custom-tool-v1",
+        "flow-ui-direct-v2"
+      ],
+      "invariants": [
+        "one Flow job selects exactly one executor",
+        "new jobs may explicitly bypass Studio Shot Bridge without replacing desktop transport",
+        "historical jobs without a selector retain custom-tool behavior"
+      ],
+      "tests": [
+        "apps/extension/src/tests/flow-executor-selection.test.cjs",
+        "pnpm typecheck:extension",
+        "pnpm test:unit"
+      ]
+    },
+    {
+      "id": "google-flow-job-dispatch",
+      "path": "packages/extension-providers/src/google-flow/flow-job-dispatch.ts",
+      "owner": "Google Flow route handoff and duplicate job dispatch guard",
+      "entrypoints": [
+        "packages/extension-providers/src/google-flow/flow-job-dispatch.ts"
+      ],
+      "contracts": [
+        "custom-tool relay",
+        "edit-route handoff",
+        "per-tab duplicate guard",
+        "run token"
+      ],
+      "invariants": [
+        "a job is executed once per active tab",
+        "edit-route handoff persists before navigation",
+        "custom-tool relay remains retryable on failure"
+      ],
+      "tests": [
+        "apps/extension/src/tests",
+        "pnpm typecheck:extension",
+        "pnpm test:unit"
+      ]
+    },
+    {
+      "id": "google-flow-prompt-editor",
+      "path": "packages/extension-providers/src/google-flow/flow-prompt-editor.ts",
+      "owner": "Google Flow prompt editor staging and verification boundary",
+      "entrypoints": [
+        "packages/extension-providers/src/google-flow/flow-prompt-editor.ts"
+      ],
+      "contracts": [
+        "native insertion",
+        "visible DOM fallback",
+        "main-world bridge fallback",
+        "prompt text verification"
+      ],
+      "invariants": [
+        "native insertion is attempted before fallback tiers",
+        "Slate editors never receive unsafe direct DOM mutation",
+        "every successful staging path verifies visible prompt text",
+        "bridge failures remain retryable"
+      ],
+      "tests": [
+        "apps/extension/src/tests",
+        "pnpm typecheck:extension",
+        "pnpm test:unit"
+      ]
+    },
+    {
+      "id": "google-flow-dom-controls",
+      "path": "packages/extension-providers/src/google-flow/flow-dom-controls.ts",
+      "owner": "Google Flow DOM interaction and transient overlay boundary",
+      "entrypoints": [
+        "packages/extension-providers/src/google-flow/flow-dom-controls.ts"
+      ],
+      "contracts": [
+        "pointer click/drag",
+        "media picker discovery",
+        "transient overlay discovery",
+        "overlay close",
+        "floating close controls"
+      ],
+      "invariants": [
+        "content orchestration consumes injected DOM controls",
+        "overlay discovery excludes media picker dialogs",
+        "visible controls are required before interaction",
+        "overlay closing remains best-effort and retryable"
+      ],
+      "tests": [
+        "apps/extension/src/tests",
+        "pnpm typecheck:extension",
+        "pnpm test:unit"
+      ]
+    },
+    {
+      "id": "google-flow-runtime-support",
+      "path": "packages/extension-providers/src/google-flow/flow-runtime-support.ts",
+      "owner": "Google Flow result, runtime, bridge, diagnostics and workspace support boundary",
+      "entrypoints": [
+        "packages/extension-providers/src/google-flow/flow-runtime-support.ts"
+      ],
+      "contracts": [
+        "result policy",
+        "job runtime",
+        "bridge",
+        "page diagnostics",
+        "workspace matching"
+      ],
+      "invariants": [
+        "provider support contracts remain provider-local",
+        "result identity and recovery stay explicit",
+        "bridge and page failures remain retryable"
+      ],
+      "tests": [
+        "apps/extension/src/tests",
+        "pnpm typecheck:extension",
+        "pnpm test:unit"
+      ]
+    },
+    {
+      "id": "google-flow-runtime-ui",
+      "path": "packages/extension-providers/src/google-flow/flow-runtime-ui.ts",
+      "owner": "Google Flow composer/text/frame UI support boundary",
+      "entrypoints": [
+        "packages/extension-providers/src/google-flow/flow-runtime-ui.ts"
+      ],
+      "contracts": [
+        "composer settings",
+        "text normalization",
+        "frame DOM"
+      ],
+      "invariants": [
+        "UI helpers remain provider-local",
+        "content orchestration does not import each UI helper directly"
+      ],
+      "tests": [
+        "apps/extension/src/tests",
+        "pnpm typecheck:extension",
+        "pnpm test:unit"
+      ]
+    },
+    {
+      "id": "google-flow-workspace-gates",
+      "path": "packages/extension-providers/src/google-flow/flow-workspace-gates.ts",
+      "owner": "Google Flow account, quota, manual-gate and project-grid detection",
+      "entrypoints": [
+        "packages/extension-providers/src/google-flow/flow-workspace-gates.ts"
+      ],
+      "contracts": [
+        "account gate",
+        "credit/quota gate",
+        "manual dialog gate",
+        "project grid create control"
+      ],
+      "invariants": [
+        "gate classification is deterministic",
+        "only visible controls are candidates",
+        "provider-specific gate text stays outside orchestration"
+      ],
+      "tests": [
+        "apps/extension/src/tests",
+        "pnpm typecheck:extension",
+        "pnpm test:unit"
+      ]
+    },
+    {
+      "id": "google-flow-reference-data",
+      "path": "packages/extension-providers/src/google-flow/flow-reference-data.ts",
+      "owner": "Google Flow reference data URL, file and local-path normalization",
+      "entrypoints": [
+        "packages/extension-providers/src/google-flow/flow-reference-data.ts"
+      ],
+      "contracts": [
+        "data URL decoding",
+        "reference usability",
+        "local media path normalization"
+      ],
+      "invariants": [
+        "reference normalization is deterministic",
+        "invalid data URLs fail closed",
+        "local paths never become remote provider URLs"
+      ],
+      "tests": [
+        "apps/extension/src/tests",
+        "pnpm typecheck:extension",
+        "pnpm test:unit"
+      ]
+    },
+    {
+      "id": "chatgpt-reasoning-control",
+      "path": "packages/extension-providers/src/chatgpt/reasoning-control.ts",
+      "owner": "ChatGPT reasoning-tier UI selection and confirmation",
+      "entrypoints": [
+        "packages/extension-providers/src/chatgpt/reasoning-control.ts"
+      ],
+      "contracts": [
+        "instant/medium/high mapping",
+        "slider selection",
+        "menu selection",
+        "visible confirmation"
+      ],
+      "invariants": [
+        "tier mapping remains deterministic",
+        "selection never reports success without visible confirmation",
+        "timeout policy continues when provider control is unavailable"
+      ],
+      "tests": [
+        "apps/extension/src/tests",
+        "pnpm typecheck:extension",
+        "pnpm test:unit"
+      ]
+    },
+    {
+      "id": "chatgpt-reference-library",
+      "path": "packages/extension-providers/src/chatgpt/reference-library.ts",
+      "owner": "ChatGPT reference-library search, reuse and duplicate-safe attachment",
+      "entrypoints": [
+        "packages/extension-providers/src/chatgpt/reference-library.ts"
+      ],
+      "contracts": [
+        "exact filename search",
+        "verified reuse",
+        "duplicate-safe attachment",
+        "library close/recovery"
+      ],
+      "invariants": [
+        "existing exact references are reused before upload",
+        "reuse reports success only after attachment verification",
+        "failed lookup closes the picker without blind duplicate upload"
+      ],
+      "tests": [
+        "apps/extension/src/tests",
+        "pnpm typecheck:extension",
+        "pnpm test:unit"
+      ]
+    },
+    {
+      "id": "google-flow-composer-reference-helpers",
+      "path": "packages/extension-providers/src/google-flow/flow-composer-reference-helpers.ts",
+      "owner": "Google Flow composer reference attachment verification and retry cleanup",
+      "entrypoints": [
+        "packages/extension-providers/src/google-flow/flow-composer-reference-helpers.ts"
+      ],
+      "contracts": [
+        "composer source verification",
+        "reference identity matching",
+        "draft cleanup"
+      ],
+      "invariants": [
+        "exact reference identity is verified before success",
+        "retry cleanup is bounded",
+        "provider DOM details stay inside adapter boundary"
+      ],
+      "tests": [
+        "apps/extension/src/tests",
+        "pnpm test:e2e"
+      ]
+    },
+    {
+      "id": "google-flow-picker-helpers",
+      "path": "packages/extension-providers/src/google-flow/flow-picker-helpers.ts",
+      "owner": "Google Flow media picker and start-frame interaction contract",
+      "entrypoints": [
+        "packages/extension-providers/src/google-flow/flow-picker-helpers.ts"
+      ],
+      "contracts": [
+        "picker inventory",
+        "exact reference selection",
+        "start-frame upload and attach"
+      ],
+      "invariants": [
+        "picker candidates are visible and exact",
+        "upload success requires attachment evidence",
+        "fallback never submits a stale tile"
+      ],
+      "tests": [
+        "apps/extension/src/tests",
+        "pnpm test:e2e"
+      ]
+    },
+    {
+      "id": "chatgpt-visual-runtime",
+      "path": "packages/extension-providers/src/chatgpt/visual-runtime.ts",
+      "owner": "ChatGPT conversation/image capture and visual result recovery",
+      "entrypoints": [
+        "packages/extension-providers/src/chatgpt/visual-runtime.ts"
+      ],
+      "contracts": [
+        "assistant turn capture",
+        "image candidate filtering",
+        "bounded generation wait"
+      ],
+      "invariants": [
+        "submitted prompt text is not accepted as visual evidence",
+        "assistant turns are scoped to the job baseline",
+        "stalled generation remains retryable"
+      ],
+      "tests": [
+        "apps/extension/src/tests",
+        "pnpm test:e2e"
+      ]
+    }
+  ],
+  "changelog": [
+    {
+      "date": "2026-08-23",
+      "change": "Extended the Google Flow DOM controls boundary to own transient overlay discovery/closing and floating close controls; content orchestration now consumes one injected interaction contract."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Split Google Flow runtime support and UI helper import boundaries so the content adapter remains below the god-file fan-out threshold."
+    },
+    {
+      "date": "2026-08-23",
+      "change": "Split Google Flow composer/reference/picker and ChatGPT visual runtime contracts; verified with 143 unit and 59 E2E tests."
+    }
+  ]
+}

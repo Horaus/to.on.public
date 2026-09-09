@@ -1,0 +1,12 @@
+{
+  "version": "0.1.1",
+  "commit": "3d3fb7cb2325c264dd676c8eb4cbcc4d5f629d9c",
+  "unsigned": true,
+  "liveGate": "pending_live_verification",
+  "channel": "release-candidate",
+  "artifacts": [
+    "Browser Native Studio v0.1.1-0.1.1.dmg",
+    "Browser Native Studio v0.1.1-0.1.1-mac.zip",
+    "browser-native-studio-extension-v0.1.1.zip"
+  ]
+}

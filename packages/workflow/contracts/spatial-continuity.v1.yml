@@ -1,0 +1,12 @@
+schema: spatial-continuity
+version: "1.0"
+purpose: Keep the 3D relationship between people, fixed props and the scene stable across shots.
+rules:
+  - fixed_anchors: Tables, counters, doors, windows and other fixed props keep one world position.
+  - relation: Describe each visible subject relative to an anchor, not only relative to another subject.
+  - axis: Preserve screen side, eyeline and camera-facing direction unless a transition explicitly changes them.
+  - transformation: A prop may move only when one authored cue owns that material transformation.
+  - opposition: "Opposite each other" never moves or duplicates a fixed anchor.
+transport:
+  same_scene: reuse_the_contract_without_rewriting
+  missing_anchor: ask_the_scene_contract_for_a_fixed_prop_or_location_anchor

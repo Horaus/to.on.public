@@ -1,0 +1,9 @@
+{
+  "name": "@studio/flow-bridge-v2",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Diagnostics-first one-to-one bridge for Studio, extension, and Flow tabs.",
+  "type": "commonjs",
+  "scripts": { "start": "node src/server.cjs", "test": "node --test src/*.test.cjs" },
+  "dependencies": { "ws": "^8.18.0" }
+}

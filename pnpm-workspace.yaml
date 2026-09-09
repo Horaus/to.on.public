@@ -1,0 +1,10 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+onlyBuiltDependencies:
+  - electron
+  - esbuild
+allowBuilds:
+  electron: true
+  electron-winstaller: set this to true or false
+  ffmpeg-static: true

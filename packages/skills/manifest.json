@@ -1,0 +1,162 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-07-28",
+  "packs": [
+    {
+      "id": "source-classification",
+      "name": "Source Classification",
+      "version": "0.1.0",
+      "locale": "en",
+      "category": "story",
+      "entitlement": "free",
+      "pipelineStages": ["story"],
+      "providerCompatibility": ["chatgpt"],
+      "files": ["source-classification.md"],
+      "description": "Classify input material and production intent before story adaptation."
+    },
+    {
+      "id": "script-adaptation",
+      "name": "Script Adaptation",
+      "version": "1.1.0",
+      "locale": "en",
+      "category": "story",
+      "entitlement": "free",
+      "pipelineStages": ["story"],
+      "providerCompatibility": ["chatgpt"],
+      "files": ["script-adaptation.md"],
+      "description": "Define source fidelity, adaptation decisions, causal beats, scene architecture, and screenplay contracts before shot design."
+    },
+    {
+      "id": "narrative-performance",
+      "name": "Narrative Performance",
+      "version": "2.0.0",
+      "locale": "en",
+      "category": "story",
+      "entitlement": "free",
+      "pipelineStages": ["story", "review"],
+      "providerCompatibility": ["chatgpt"],
+      "files": ["narrative-performance.md"],
+      "description": "Select a composable video profile, then author dramatic, dialogue-led, visual, animated or hybrid performance without changing locked content."
+    },
+    {
+      "id": "visual-reference",
+      "name": "Visual Reference",
+      "version": "0.1.0",
+      "locale": "en",
+      "category": "visual",
+      "entitlement": "free",
+      "pipelineStages": ["identity", "keyframe"],
+      "providerCompatibility": ["chatgpt"],
+      "files": ["visual-reference.md"],
+      "description": "Guide character, style, prop, and scene reference generation."
+    },
+    {
+      "id": "stop-motion-style",
+      "name": "Stop-Motion Style",
+      "version": "0.1.0",
+      "locale": "en",
+      "category": "visual",
+      "entitlement": "free",
+      "pipelineStages": ["identity", "prompt", "keyframe", "video"],
+      "providerCompatibility": ["chatgpt", "google-flow", "grok"],
+      "files": ["stop-motion-style.md"],
+      "description": "Maintain stop-motion visual and motion constraints across assets."
+    },
+    {
+      "id": "image-prompt",
+      "name": "Image Prompt",
+      "version": "0.1.0",
+      "locale": "en",
+      "category": "prompt",
+      "entitlement": "free",
+      "pipelineStages": ["prompt", "keyframe"],
+      "providerCompatibility": ["chatgpt"],
+      "files": ["image-prompt.md"],
+      "description": "Build image prompts from story, style, character, and shot context."
+    },
+    {
+      "id": "storyboard-prompt",
+      "name": "Storyboard Prompt",
+      "version": "0.2.0",
+      "locale": "en",
+      "category": "prompt",
+      "entitlement": "free",
+      "pipelineStages": ["prompt", "keyframe"],
+      "providerCompatibility": ["chatgpt"],
+      "files": ["storyboard-prompt.md"],
+      "description": "Generate scene and shot storyboard prompts before video rendering."
+    },
+    {
+      "id": "video-prompt",
+      "name": "Video Prompt",
+      "version": "0.2.0",
+      "locale": "en",
+      "category": "prompt",
+      "entitlement": "free",
+      "pipelineStages": ["video"],
+      "providerCompatibility": ["google-flow"],
+      "files": ["video-prompt.md"],
+      "description": "Convert keyframes and shot intent into short Flow-ready video prompts."
+    },
+    {
+      "id": "continuity-review",
+      "name": "Continuity Review",
+      "version": "0.1.0",
+      "locale": "en",
+      "category": "review",
+      "entitlement": "free",
+      "pipelineStages": ["review"],
+      "providerCompatibility": ["chatgpt", "google-flow"],
+      "files": ["continuity-review.md"],
+      "description": "Review generated assets for identity, style, scene, and motion consistency."
+    },
+    {
+      "id": "short-drama-video",
+      "name": "Short Drama",
+      "version": "3.0.0",
+      "locale": "en",
+      "category": "video-type",
+      "entitlement": "free",
+      "pipelineStages": ["story", "prompt", "keyframe", "video", "review"],
+      "providerCompatibility": ["chatgpt", "google-flow"],
+      "files": ["short-drama-video.md"],
+      "description": "Narrative shorts with a readable conflict, escalation, and visual payoff."
+    },
+    {
+      "id": "explainer-video",
+      "name": "Visual Explainer",
+      "version": "1.0.0",
+      "locale": "en",
+      "category": "video-type",
+      "entitlement": "free",
+      "pipelineStages": ["story", "prompt", "keyframe", "video", "review"],
+      "providerCompatibility": ["chatgpt", "google-flow"],
+      "files": ["explainer-video.md"],
+      "description": "Clear educational videos organized around one idea and observable examples."
+    },
+    {
+      "id": "product-ad-video",
+      "name": "Product Ad",
+      "version": "1.0.0",
+      "locale": "en",
+      "category": "video-type",
+      "entitlement": "premium",
+      "pipelineStages": ["story", "identity", "prompt", "keyframe", "video", "review"],
+      "providerCompatibility": ["chatgpt", "google-flow"],
+      "files": ["product-ad-video.md"],
+      "description": "Product-focused commercial storytelling with controlled claims and hero continuity."
+    },
+    {
+      "id": "supplement-health-short-video",
+      "name": "Supplement Health Short Video",
+      "version": "0.1.0",
+      "locale": "en",
+      "category": "video-type",
+      "entitlement": "premium",
+      "pipelineStages": ["story", "prompt", "keyframe", "video", "review"],
+      "providerCompatibility": ["chatgpt", "google-flow"],
+      "files": ["supplement-health-short-video.md"],
+      "description": "Specialized short-video guidance for supplement, nutrition, and wellness content."
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+schema: character-identity
+version: "1.0"
+required:
+  - name
+  - role
+  - storyFunction
+  - appearance
+  - outfit
+  - personality
+  - visualStyle
+  - continuity
+rules:
+  storyFunction: narrative_only
+  appearance: visible_traits_only
+  outfit: clothing_and_accessories_only
+  personality: behavior_and_delivery_only
+  visualStyle: render_medium_only
+  continuity: locked_invariants_only
+transport:
+  sameConversation: reuse_context_without_upload
+  missingOrAmbiguousContext: upload_primary_identity_once

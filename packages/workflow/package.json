@@ -1,0 +1,9 @@
+{
+  "name": "@studio/workflow",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./reference-workspace": "./src/reference-workspace.ts"
+  }
+}

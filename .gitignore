@@ -1,0 +1,13 @@
+node_modules/
+dist/
+apps/*/dist/
+test-results/
+.DS_Store
+
+# Large installers are uploaded to GitHub Releases, not committed to Git.
+release-assets/*/uploads/
+
+# Local runtime state must never be published.
+runtime/*/profile/
+runtime/*/user-data/
+runtime/*/logs/

@@ -1,0 +1,15 @@
+{
+  "name": "extension",
+  "version": "0.2.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite build --watch",
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@studio/protocol": "workspace:*",
+    "@studio/types": "workspace:*"
+  }
+}

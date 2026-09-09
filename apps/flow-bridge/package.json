@@ -1,0 +1,14 @@
+{
+  "name": "@studio/flow-bridge",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Standalone one-to-one bridge for Browser-Native Studio provider sessions.",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/server.cjs",
+    "test": "node --test src/*.test.cjs"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}

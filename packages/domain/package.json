@@ -1,0 +1,28 @@
+{
+  "name": "@studio/domain",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./src/index.ts",
+      "require": "./src/index.cjs"
+    },
+    "./shot-classification": {
+      "import": "./src/shot-classification.ts",
+      "require": "./src/shot-classification.cjs"
+    },
+    "./story-validation": "./src/story-validation.cjs",
+    "./pipeline-gates": {
+      "import": "./src/pipeline-gates.ts",
+      "require": "./src/pipeline-gates.cjs"
+    },
+    "./duration-policy": "./src/duration-policy.ts",
+    "./labels": "./src/labels.ts",
+    "./layout": "./src/layout.ts",
+    "./identifiers": "./src/identifiers.ts",
+    "./conversation-url": {
+      "require": "./src/conversation-url.cjs"
+    }
+  }
+}
