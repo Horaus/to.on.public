@@ -1651,11 +1651,11 @@
 	var activeDeps$1;
 	async function requestTobyFlowTextInsert$1(text) {
 		try {
-			const response = await chrome.runtime.sendMessage({
+			const response = await Promise.race([chrome.runtime.sendMessage({
 				source: "google-flow-adapter",
 				type: "TOBY_FLOW_INSERT_TEXT",
 				text
-			});
+			}), new Promise((_, reject) => setTimeout(() => reject(/* @__PURE__ */ new Error("TobyFlow text insertion timed out after 5s.")), 5e3))]);
 			return response?.ok === true && response?.value === true;
 		} catch {
 			return false;
@@ -1710,14 +1710,14 @@
 	}
 	async function requestNativeMouseClick$1(clientX, clientY, expectedText = "", confirmIfUnchanged = false) {
 		try {
-			const response = await chrome.runtime.sendMessage({
+			const response = await Promise.race([chrome.runtime.sendMessage({
 				source: "google-flow-adapter",
 				type: "NATIVE_MOUSE_CLICK",
 				x: clientX,
 				y: clientY,
 				expectedText,
 				confirmIfUnchanged
-			});
+			}), new Promise((_, reject) => setTimeout(() => reject(/* @__PURE__ */ new Error("Native Flow mouse click timed out after 5s.")), 5e3))]);
 			if (response?.ok) {
 				const detail = response.value;
 				lastNativeMouseClickDiagnostic$1 = `${detail?.method || "ok"}${detail?.directError ? `;directError=${detail.directError}` : ""}`;
@@ -2194,14 +2194,14 @@
 		await deps.sleep(180);
 		const center = deps.elementCenter(editor);
 		try {
-			const response = await chrome.runtime.sendMessage({
+			const response = await Promise.race([chrome.runtime.sendMessage({
 				source: "google-flow-adapter",
 				type: "NATIVE_INSERT_TEXT",
 				x: center.clientX,
 				y: center.clientY,
 				text,
 				focusOnly: false
-			});
+			}), new Promise((_, reject) => setTimeout(() => reject(/* @__PURE__ */ new Error("Native Flow text insertion timed out after 8s.")), 8e3))]);
 			if (!response?.ok) {
 				state.lastNativeTextInsertError = String(response?.error || "Native insert request was rejected.");
 				return false;
@@ -5629,11 +5629,13 @@
 			}
 			await humanPause(350, 650);
 		}
+		flowTrace(jobId, "Final gate: staging the verified prompt immediately before submit.", .69);
 		if (!(await stagePromptText(payload.prompt, { clearFirst: true })).ok || !await ensurePromptMatchesJob(jobId, payload.prompt)) {
 			lastFlowValidationFailure = "final-prompt-stage";
 			reportResult(jobId, "failed_retryable", void 0, `Flow final Toby-style prompt staging did not persist before submit. ${flowDebugSnapshot()}`);
 			return false;
 		}
+		flowTrace(jobId, "Final gate: prompt staging persisted; preparing the single submit action.", .695);
 		await humanPause(350, 650);
 		return true;
 	}
