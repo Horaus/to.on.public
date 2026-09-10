@@ -139,7 +139,12 @@
 		};
 	}
 	function discardFlowPromptButton() {
-		return Array.from(document.querySelectorAll("button, [role='button']")).filter(deps.isVisible).find((button) => /x(?:oá|óa|oa) câu lệnh|clear prompt|discard prompt/i.test(button.textContent || "")) || null;
+		return Array.from(document.querySelectorAll("button, [role='button']")).filter(deps.isVisible).find((button) => /x(?:oá|óa|oa) câu lệnh|clear prompt|discard prompt/i.test([
+			button.getAttribute("aria-label") || "",
+			button.getAttribute("title") || "",
+			deps.visibleText(button),
+			button.textContent || ""
+		].join(" "))) || null;
 	}
 	async function removeOneComposerReference(jobId, before) {
 		const discard = discardFlowPromptButton();
