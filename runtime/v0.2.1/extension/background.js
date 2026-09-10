@@ -4831,7 +4831,6 @@ var isFlowAmbiguousCustomToolError$1;
 var isFlowCustomToolUrl$1;
 var isFlowProjectUrl$1;
 var isSavedChatGptConversationUrl;
-var uploadedChatGptReferences = /* @__PURE__ */ new Map();
 var normalizeProvider;
 var persistActiveJobSnapshot$1;
 var planProviderAdmission;
@@ -4946,8 +4945,8 @@ async function handleDesktopMessage$1(message) {
 			break;
 	}
 }
-function nativeUploadCandidates(job, assetId, uploaded) {
-	return (job.references || []).filter((reference) => !assetId || reference.assetId === assetId).filter((reference) => !uploaded.has(reference.assetId));
+function nativeUploadCandidates(job, assetId) {
+	return (job.references || []).filter((reference) => !assetId || reference.assetId === assetId);
 }
 async function setChatGptNativeFiles(target, files) {
 	await chrome.debugger.attach(target, "1.3");
@@ -4970,10 +4969,12 @@ async function setChatGptNativeFiles(target, files) {
 			nodeId: query.nodeId,
 			files
 		});
-		await chrome.debugger.sendCommand(target, "Runtime.evaluate", {
-			expression: `(() => { const input = document.querySelector('#upload-files:not([disabled])'); if (!input) return false; input.dispatchEvent(new Event('input', { bubbles: true, composed: true })); input.dispatchEvent(new Event('change', { bubbles: true, composed: true })); return true; })()`,
+		const dispatched = await chrome.debugger.sendCommand(target, "Runtime.evaluate", {
+			expression: `(() => { const composer = document.querySelector('#prompt-textarea')?.closest('form'); const input = composer?.querySelector('#upload-files:not([disabled])'); if (!input) return { ok: false, files: [] }; const names = Array.from(input.files || [], file => file.name); input.dispatchEvent(new Event('input', { bubbles: true, composed: true })); input.dispatchEvent(new Event('change', { bubbles: true, composed: true })); return { ok: true, files: names }; })()`,
 			returnByValue: true
 		});
+		const stagedFiles = dispatched.result?.value?.files || [];
+		if (!dispatched.result?.value?.ok || stagedFiles.length !== files.length) throw new Error(`ChatGPT composer file staging failed: expected ${files.length}, observed ${stagedFiles.length}.`);
 	} finally {
 		await chrome.debugger.detach(target).catch(() => void 0);
 	}
@@ -4981,14 +4982,9 @@ async function setChatGptNativeFiles(target, files) {
 async function uploadChatGptReferencesNatively$1(job, assetId) {
 	if (!job.tabId) throw new Error("ChatGPT tab is unavailable for native reference upload.");
 	if (String(job.settings?.referenceTransport || "") === "conversation_context") return;
-	const conversationKey = `${job.tabId}:${String(job.conversationUrl || job.settings?.sessionKey || "default")}`;
-	const uploaded = uploadedChatGptReferences.get(conversationKey) || /* @__PURE__ */ new Set();
-	const candidates = nativeUploadCandidates(job, assetId, uploaded);
-	const files = candidates.map((reference) => reference.filePath).filter((value) => Boolean(value));
+	const files = nativeUploadCandidates(job, assetId).map((reference) => reference.filePath).filter((value) => Boolean(value));
 	if (files.length === 0) throw new Error("No local reference paths are available for native upload.");
 	await setChatGptNativeFiles({ tabId: job.tabId }, files);
-	candidates.forEach((reference) => uploaded.add(reference.assetId));
-	uploadedChatGptReferences.set(conversationKey, uploaded);
 }
 async function handleRecoverFlowResult(message) {
 	const jobId = String(message.jobId || "");

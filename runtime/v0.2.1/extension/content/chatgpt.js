@@ -835,7 +835,7 @@
 	//#endregion
 	//#region ../../packages/extension-providers/src/chatgpt/content.ts
 	console.log("[Studio] ChatGPT adapter loaded");
-	var ADAPTER_VERSION = "chatgpt-result-baseline-v12+verified-reference-upload-v22+asset-library-reuse+structured-json-tail-recovery-v23+mounted-assistant-v24";
+	var ADAPTER_VERSION = "chatgpt-result-baseline-v12+verified-reference-upload-v25+asset-library-reuse+structured-json-tail-recovery-v23+mounted-assistant-v24";
 	function normalizedUiLabel(value) {
 		return value.replace(/\s+/g, " ").trim().toLowerCase();
 	}
@@ -901,7 +901,7 @@
 		visibleRoots: () => visibleMenuOrDialogRoots(),
 		closePicker: closeChatGptPicker,
 		composerHasFilename: (filename) => composerContainsReferenceFilename(filename),
-		attachmentCount: (references) => composerAttachmentCount(references),
+		attachmentCount: () => composerVisualReferenceCount(),
 		waitForUpload: (jobId, references, beforeCount) => waitForReferenceUpload(jobId, references, beforeCount),
 		registeredReference: (reference) => registeredChatGptReference(reference),
 		confirmReference: (reference) => markChatGptReferenceConfirmed(reference),
@@ -1180,20 +1180,8 @@
 		const input = findElement(SELECTORS.promptInput);
 		return input?.closest("form") || input?.closest("[data-testid*=\"composer\" i]") || input?.parentElement?.parentElement || document.body;
 	}
-	function composerAttachmentCount(references) {
-		const root = composerRoot();
-		const images = composerImageCount(root);
-		const text = (root.innerText || "").toLowerCase();
-		const filenameMatches = references.filter((reference) => reference.filename && text.includes(reference.filename.toLowerCase())).length;
-		const attachmentControls = Array.from(root.querySelectorAll([
-			"[data-testid*=\"attachment\" i]",
-			"[data-testid*=\"uploaded-file\" i]",
-			"[data-testid*=\"file-preview\" i]",
-			"[aria-label*=\"Remove attachment\" i]",
-			"[aria-label*=\"Xóa tệp\" i]",
-			"[aria-label*=\"delete attachment\" i]"
-		].join(","))).filter(visibleElement).length;
-		return images + filenameMatches + attachmentControls;
+	function composerVisualReferenceCount() {
+		return composerImageCount(composerRoot());
 	}
 	function composerImageCount(root) {
 		return Array.from(root.querySelectorAll("img")).filter((image) => {
@@ -1215,7 +1203,7 @@
 		if (expectedCount === 0) return;
 		const start = Date.now();
 		while (Date.now() - start < 2e4) {
-			if (composerAttachmentCount(references) >= beforeCount + expectedCount) {
+			if (composerVisualReferenceCount() >= beforeCount + expectedCount) {
 				reportStatus(jobId, "submitting", `Confirmed ${expectedCount} visual reference upload(s).`, void 0, references.filter((reference) => reference.base64).map((reference) => reference.assetId));
 				await sleep(1200);
 				return;
@@ -1283,7 +1271,7 @@
 	async function uploadReferencesNatively(references, jobId) {
 		for (const reference of references) {
 			if (await tryReuseReferenceFromChatGptLibrary(reference, jobId)) continue;
-			const beforeCount = composerAttachmentCount(references);
+			const beforeCount = composerVisualReferenceCount();
 			if (!(await chrome.runtime.sendMessage({
 				source: "content-script",
 				action: "NATIVE_CHATGPT_UPLOAD_REFERENCES",
@@ -1317,7 +1305,7 @@
 			const file = referenceFile(reference);
 			if (!file || seen.has(referenceFingerprint(reference))) continue;
 			seen.add(referenceFingerprint(reference));
-			const beforeCount = composerAttachmentCount(references);
+			const beforeCount = composerVisualReferenceCount();
 			const transfer = new DataTransfer();
 			transfer.items.add(file);
 			input.files = transfer.files;
@@ -1335,6 +1323,8 @@
 		if (seen.size === 0) throw new Error("No image reference data was available to upload.");
 	}
 	async function uploadReferences(references, jobId) {
+		const expectedReferences = references.filter((reference) => reference.base64);
+		const initialVisualCount = composerVisualReferenceCount();
 		const attachmentMenuButton = Array.from(document.querySelectorAll("button")).find((element) => {
 			const label = `${element.getAttribute("aria-label") || ""} ${element.textContent || ""}`.toLowerCase();
 			return visibleElement(element) && /attach|add files|thêm tệp|đính kèm/.test(label);
@@ -1343,8 +1333,9 @@
 			simulateUiClick(attachmentMenuButton);
 			await sleep(400);
 		}
-		if (await uploadReferencesNatively(references, jobId)) return;
-		await uploadReferencesThroughInput(references, jobId);
+		if (!await uploadReferencesNatively(references, jobId)) await uploadReferencesThroughInput(references, jobId);
+		const finalVisualCount = composerVisualReferenceCount();
+		if (finalVisualCount < initialVisualCount + expectedReferences.length) throw new Error(`REFERENCE_SET_INCOMPLETE: Expected ${expectedReferences.length} new image preview(s) in the active ChatGPT composer, but confirmed ${Math.max(0, finalVisualCount - initialVisualCount)}. Prompt submission was blocked.`);
 	}
 	function findNewConversationTarget() {
 		return findElement(SELECTORS.newChat) || Array.from(document.querySelectorAll("a, button")).find((element) => {
