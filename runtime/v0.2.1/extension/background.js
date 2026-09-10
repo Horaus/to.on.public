@@ -4576,11 +4576,17 @@ async function paceChatGptDispatch(job) {
 		return false;
 	}
 	const remaining = CHATGPT_MIN_DISPATCH_INTERVAL_MS$1 - (nowMs - lastChatGptDispatchAt);
-	if (remaining > 0) {
-		sendStatus$2(job.jobId, "opening_provider", `ChatGPT safety pacing: waiting ${Math.ceil(remaining / 1e3)}s before the next submit.`, .2);
-		await new Promise((resolve) => setTimeout(resolve, remaining));
-	}
+	if (remaining > 0) await waitForChatGptDispatchPacing(job, remaining);
 	return true;
+}
+async function waitForChatGptDispatchPacing(job, durationMs) {
+	const deadline = Date.now() + durationMs;
+	while (true) {
+		const remaining = deadline - Date.now();
+		if (remaining <= 0) return;
+		sendStatus$2(job.jobId, "opening_provider", `ChatGPT safety pacing: waiting ${Math.ceil(remaining / 1e3)}s before the next submit.`, .2);
+		await new Promise((resolve) => setTimeout(resolve, Math.min(remaining, 2e4)));
+	}
 }
 async function paceProviderDispatch(job) {
 	if (job.provider === "chatgpt") return paceChatGptDispatch(job);
