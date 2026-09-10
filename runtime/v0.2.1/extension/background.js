@@ -4280,9 +4280,20 @@ async function dispatchNativeFileChooserUpload$2(tabId, x, y, filePaths) {
 	await boundedNativeChooser(withDebuggerSession(tabId, async () => {
 		const target = { tabId };
 		await chrome.debugger.attach(target, "1.3");
-		let chooserNode = 0;
+		let chooserEvent = null;
+		let resolveChooser;
+		const chooserOpened = new Promise((resolve) => {
+			resolveChooser = resolve;
+		});
 		const onEvent = (source, method, params) => {
-			if (Number(source.tabId) === tabId && method === "Page.fileChooserOpened") chooserNode = Number(params?.backendNodeId || 0);
+			if (Number(source.tabId) !== tabId || method !== "Page.fileChooserOpened") return;
+			const event = params;
+			chooserEvent = {
+				backendNodeId: Number(event?.backendNodeId || 0),
+				frameId: event?.frameId,
+				mode: event?.mode
+			};
+			resolveChooser(chooserEvent);
 		};
 		chrome.debugger.onEvent.addListener(onEvent);
 		try {
@@ -4305,13 +4316,28 @@ async function dispatchNativeFileChooserUpload$2(tabId, x, y, filePaths) {
 				buttons: 0,
 				clickCount: 1
 			});
-			const startedAt = Date.now();
-			while (!chooserNode && Date.now() - startedAt < 5e3) await new Promise((resolve) => setTimeout(resolve, 100));
-			if (!chooserNode) throw new Error("Flow upload file chooser did not open after the native upload click.");
-			await chrome.debugger.sendCommand(target, "DOM.setFileInputFiles", {
-				backendNodeId: chooserNode,
+			chooserEvent = await Promise.race([chooserOpened, new Promise((_, reject) => setTimeout(() => reject(/* @__PURE__ */ new Error("Flow upload file chooser did not open after the native upload click.")), 5e3))]);
+			if (chooserEvent.backendNodeId) await chrome.debugger.sendCommand(target, "DOM.setFileInputFiles", {
+				backendNodeId: chooserEvent.backendNodeId,
 				files: filePaths
 			});
+			else {
+				const documentResult = await chrome.debugger.sendCommand(target, "DOM.getDocument", {
+					depth: 1,
+					pierce: true
+				});
+				const rootNodeId = Number(documentResult.root?.nodeId || 0);
+				if (!rootNodeId) throw new Error("Flow chooser opened without a usable upload input.");
+				const nodeIds = ((await chrome.debugger.sendCommand(target, "DOM.querySelectorAll", {
+					nodeId: rootNodeId,
+					selector: "input[type=\"file\"]"
+				})).nodeIds || []).filter((nodeId) => Number(nodeId) > 0);
+				if (nodeIds.length !== 1) throw new Error("Flow chooser opened without one exact upload input.");
+				await chrome.debugger.sendCommand(target, "DOM.setFileInputFiles", {
+					nodeId: nodeIds[0],
+					files: filePaths
+				});
+			}
 		} finally {
 			chrome.debugger.onEvent.removeListener(onEvent);
 			await chrome.debugger.detach(target).catch(() => void 0);
@@ -5319,7 +5345,6 @@ async function openProviderJob(job, targetUrl) {
 async function prepareFreshConversation(job, tab, targetUrl) {
 	if (job.provider !== "chatgpt" || !job.settings?.newConversation || job.conversationUrl || !tab.id) return tab;
 	sendStatus$1(job.jobId, "opening_provider", "Opening a clean ChatGPT conversation for this production session...", .16);
-	if (tab.url !== targetUrl) tab = await chrome.tabs.update(tab.id, { url: targetUrl });
 	job.settings = {
 		...job.settings,
 		newConversation: false,
