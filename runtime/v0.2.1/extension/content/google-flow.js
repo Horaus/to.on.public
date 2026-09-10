@@ -1268,7 +1268,7 @@
 		console.warn(`[Studio][Flow][${jobId}] Flow composer setting "${label}" was not found.`, activeDeps$3.flowDebugSnapshot());
 		return { ok: false };
 	}
-	async function clickInComposerSettingsBounded$1(jobId, label, patterns, retryCount = 2, suffixes = [], timeoutMs = 2500) {
+	async function clickInComposerSettingsBounded$1(jobId, label, patterns, retryCount = 2, suffixes = [], timeoutMs = 8e3) {
 		const result = await activeDeps$3.withTimeout(clickInComposerSettings$1(jobId, label, patterns, retryCount, suffixes), timeoutMs, {
 			ok: false,
 			via: "timeout"
@@ -3021,7 +3021,7 @@
 			/^x\s*1$/i,
 			/^1x$/i,
 			/^1$/
-		], 1, ["1"], 1800);
+		], 1, ["1"], 8e3);
 		document.dispatchEvent(new KeyboardEvent("keydown", {
 			key: "Escape",
 			bubbles: true
