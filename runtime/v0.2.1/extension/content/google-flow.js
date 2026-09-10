@@ -964,7 +964,7 @@
 		return Array.from(document.querySelectorAll("[role=\"menu\"], [data-radix-popper-content-wrapper], [data-state=\"open\"]")).filter((element) => {
 			const text = element.innerText || "";
 			const rect = element.getBoundingClientRect();
-			return activeDeps$3.isVisible(element) && rect.top > window.innerHeight * .35 && /hình ảnh|image/i.test(text) && /video/i.test(text) && /9\s*:\s*16|16\s*:\s*9|4\s*:\s*3|3\s*:\s*4|1\s*:\s*1/i.test(text) && /x\s*1|1x|x\s*2|x\s*3|x\s*4|4s|6s|8s|10s/i.test(text);
+			return activeDeps$3.isVisible(element) && rect.top > window.innerHeight * .35 && /hình ảnh|image/i.test(text) && /video/i.test(text) && /9\s*:\s*16|16\s*:\s*9|4\s*:\s*3|3\s*:\s*4|1\s*:\s*1/i.test(text) && /x\s*1|1x|x\s*2|x\s*3|x\s*4|(?:4|6|8|10)\s*(?:s|giây|seconds?)/i.test(text);
 		}).at(-1) || null;
 	}
 	function getComposerSettingsButton$1() {
@@ -1019,9 +1019,9 @@
 			8,
 			10
 		].find((value) => settingsText.includes(`${value} giây`) || settingsText.includes(`${value} seconds`));
-		if (localizedDuration !== void 0 && localizedDuration >= flowDuration) return true;
+		if (localizedDuration !== void 0 && localizedDuration === flowDuration) return true;
 		if (new RegExp(`(^|\\D)${flowDuration}\\s*s(?=\\D|$)`, "i").test(settingsText)) return true;
-		return Number(settingsText.match(/(^|\D)(4|6|8|10)\s*s(?=\D|$)/i)?.[2] || 0) >= flowDuration;
+		return Number(settingsText.match(/(^|\D)(4|6|8|10)\s*s(?=\D|$)/i)?.[2] || 0) === flowDuration;
 	}
 	function isFlowAgentShellVisible$1() {
 		const bodyText = document.body?.innerText || "";
