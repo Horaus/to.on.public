@@ -961,7 +961,7 @@
 		return candidates.at(-1) || sidePanel || null;
 	}
 	function getComposerSettingsMenu$1() {
-		return Array.from(document.querySelectorAll("[role=\"menu\"], [data-radix-popper-content-wrapper], [data-state=\"open\"]")).filter((element) => {
+		return Array.from(document.querySelectorAll("[role=\"menu\"], [data-radix-popper-content-wrapper], [data-state=\"open\"], flow-prompt-box-settings, .cdk-overlay-pane")).filter((element) => {
 			const text = element.innerText || "";
 			const rect = element.getBoundingClientRect();
 			return activeDeps$3.isVisible(element) && rect.top > window.innerHeight * .35 && /hình ảnh|image/i.test(text) && /video/i.test(text) && /9\s*:\s*16|16\s*:\s*9|4\s*:\s*3|3\s*:\s*4|1\s*:\s*1/i.test(text) && /x\s*1|1x|x\s*2|x\s*3|x\s*4|(?:4|6|8|10)\s*(?:s|giây|seconds?)/i.test(text);
