@@ -3764,13 +3764,16 @@ async function updateProviderTabUrl(tabId, targetUrl) {
 }
 async function findExactFlowProjectTab$2(targetUrl) {
 	const targetPath = new URL(targetUrl).pathname.replace(/\/(?:tool|tool-version|shared\/tool)\/[^/]+$/i, "").replace(/\/edit\/.*$/i, "").replace(/\/+$/, "");
-	const exact = (await chrome.tabs.query({ url: FLOW_TAB_PATTERNS$1 })).find((tab) => {
+	const exact = (await chrome.tabs.query({ url: FLOW_TAB_PATTERNS$1 })).filter((tab) => {
 		try {
 			return Boolean(tab.url) && new URL(tab.url).pathname.replace(/\/(?:tool|tool-version|shared\/tool)\/[^/]+$/i, "").replace(/\/edit\/.*$/i, "").replace(/\/+$/, "") === targetPath;
 		} catch {
 			return false;
 		}
-	});
+	}).sort((a, b) => {
+		const baseScore = (tab) => (isFlowCustomToolUrl$2(tab.url) ? 0 : 100) + (tab.status === "complete" ? 10 : 0);
+		return baseScore(b) - baseScore(a);
+	})[0];
 	if (!exact?.id) throw new Error(`The Google Flow job is locked to ${targetUrl}, but that exact project is not open in the current signed-in account. Open the original Flow project before recovery; the extension will not submit in another project.`);
 	return exact;
 }
