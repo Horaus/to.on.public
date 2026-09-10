@@ -353,6 +353,54 @@ function handleFlowAppDiagnostic(deps, message, sendResponse) {
 	if (message.source !== "extension-diagnostic" || message.type !== "PROBE_FLOW_APP_INTAKE") return false;
 	return respondWithValue(deps.probeFlowAppIntake(message.payload), sendResponse);
 }
+function handleFlowProjectInitialData(message, sendResponse) {
+	if (message.source !== "google-flow-adapter" || message.type !== "FLOW_PROJECT_INITIAL_DATA") return false;
+	const projectId = String(message.projectId || "").trim();
+	if (!projectId || !/^[a-z0-9_-]+$/i.test(projectId)) {
+		sendResponse({
+			ok: false,
+			error: "Invalid Flow project id."
+		});
+		return true;
+	}
+	const input = encodeURIComponent(JSON.stringify({ json: { projectId } }));
+	const readOnSignedInFlowOrigin = async () => {
+		const tab = await chrome.tabs.create({
+			url: `https://labs.google/fx/vi/tools/flow/project/${encodeURIComponent(projectId)}`,
+			active: false
+		});
+		if (!tab.id) throw new Error("Could not open temporary signed-in Flow metadata tab.");
+		try {
+			const startedAt = Date.now();
+			while (Date.now() - startedAt < 2e4) {
+				if ((await chrome.tabs.get(tab.id)).status === "complete") break;
+				await new Promise((resolve) => setTimeout(resolve, 250));
+			}
+			const [result] = await chrome.scripting.executeScript({
+				target: { tabId: tab.id },
+				world: "MAIN",
+				func: async (query) => {
+					const response = await fetch(`/fx/api/trpc/flow.projectInitialData?input=${query}`, {
+						credentials: "include",
+						cache: "no-store"
+					});
+					return {
+						ok: response.ok,
+						status: response.status,
+						body: await response.json()
+					};
+				},
+				args: [input]
+			});
+			const value = result?.result;
+			if (!value?.ok) throw new Error(`Flow project data request failed (${value?.status || "unknown"}).`);
+			return value.body;
+		} finally {
+			await chrome.tabs.remove(tab.id).catch(() => void 0);
+		}
+	};
+	return respondWithValue(readOnSignedInFlowOrigin(), sendResponse);
+}
 function handleBridgeMessage(deps, message, sendResponse) {
 	if (message.source === "google-flow-adapter" && message.type === "ENSURE_BRIDGE_CONNECTION") {
 		deps.ensureBridgeConnection();
@@ -726,6 +774,7 @@ function dispatchRuntimeMessage(deps, message, sender, sendResponse) {
 	const handlers = [
 		() => handleBridgeMessage(deps, message, sendResponse),
 		() => handleFlowAppDiagnostic(deps, message, sendResponse),
+		() => handleFlowProjectInitialData(message, sendResponse),
 		() => handleCustomToolMessage(deps, message, sender, sendResponse),
 		() => handleFlowWorkspaceReference(deps, {
 			...message,
@@ -1240,10 +1289,48 @@ function validateFlowSubmitContext(context) {
 	return { ok: true };
 }
 function isPublishedFlowRuntimeRoute(value) {
-	return /^https:\/\/labs\.google(?:\.com)?\/fx\/[^/]*\/tools\/flow\/project\/[^/]+\/tool-version\/[^/]+$/i.test(value) || /^https:\/\/labs\.google(?:\.com)?\/fx\/tools\/flow\/project\/[^/]+\/tool-version\/[^/]+$/i.test(value);
+	return /^https:\/\/labs\.google(?:\.com)?\/fx\/[^/]*\/tools\/flow\/(?:project\/[^/]+\/tool-version\/|shared\/tool\/)[^/]+$/i.test(value) || /^https:\/\/labs\.google(?:\.com)?\/fx\/tools\/flow\/(?:project\/[^/]+\/tool-version\/|shared\/tool\/)[^/]+$/i.test(value);
 }
 function flowProjectId(value) {
 	return String(value || "").match(/\/tools\/flow\/project\/([^/]+)/i)?.[1] || "";
+}
+var identities = new Set([
+	"61af9773-1ce9-4f36-a624-d010f05a53f2",
+	"6c907eac-e8e8-4040-8e46-e38e6cd0662b",
+	"4b879882-e1c1-4414-9e05-4202b33f1f31",
+	"08ee45bf-f7fc-4e9a-a097-940a16ecf03a",
+	"8ff19cad-99ce-4213-abea-9f316663255c",
+	"578615c4-cc20-42f4-b3b3-5ae1b1454e94",
+	"fb030780-41d2-48a6-8fa5-bc94538e60c1",
+	"64a29df4-340e-44ae-8a9e-3bf77056f9a7",
+	"d8011bb8-81b8-460f-b0a0-164455f6bfac",
+	"f84d4d6a-ac30-4bfe-89fc-44e62c09f99e",
+	"1f79134e-f6ad-4589-903a-8fead23a6379"
+]);
+var host = /^(?:labs\.google(?:\.com)?|flow\.google\.com)$/i;
+var canonical = /^\/fx\/(?:[^/]+\/)?tools\/flow\/(?:project\/([^/]+)\/tool-version\/([^/]+)|shared\/tool\/([^/]+))\/?$/i;
+var legacy = /^(?:\/project\/([^/]+)\/tool\/([^/]+)|\/shared\/tool\/([^/]+))\/?$/i;
+function parse(value) {
+	if (!value) return null;
+	try {
+		const url = new URL(value);
+		if (!host.test(url.hostname)) return null;
+		const match = url.pathname.match(canonical) || url.pathname.match(legacy);
+		if (!match) return null;
+		return {
+			url,
+			identity: match[2] || match[3] || "",
+			published: Boolean(url.pathname.includes("tool-version") || url.pathname.includes("/shared/tool/") || identities.has((match[2] || match[3] || "").toLowerCase()))
+		};
+	} catch {
+		return null;
+	}
+}
+function isFlowCustomToolUrl$2(value) {
+	return Boolean(parse(value));
+}
+function isFlowRuntimeToolUrl(value) {
+	return Boolean(parse(value)?.published);
 }
 //#endregion
 //#region src/background/flow-app-diagnostic.ts
@@ -1389,7 +1476,7 @@ var LOCAL_MEDIA_ORIGIN = "http://127.0.0.1:3768/media/";
 var FLOW_RESULT_TIMEOUT_MS = 15 * 6e4;
 var relayToolReadyExpression = `(() => { const text = String(document.body?.innerText || document.documentElement?.innerText || ""); return (/RELAY BRIDGE/i.test(text) && /(?:GENERATE VIDEO|EXECUTE RELAY JOB|TRIGGER RELAY)/i.test(text)) || (/STUDIO-TO-PROVIDER PROTOCOL PROXY/i.test(text) && /(?:IDLE \/ WAITING|AWAITING STUDIO_SHOT_REQUEST)/i.test(text)); })()`;
 function isFreshRelayRuntime(url) {
-	return /(?:\/tools\/flow\/(?:project\/[^/]+\/tool-version\/|shared\/tool\/)(?:61af9773-1ce9-4f36-a624-d010f05a53f2|6c907eac-e8e8-4040-8e46-e38e6cd0662b|4b879882-e1c1-4414-9e05-4202b33f1f31|08ee45bf-f7fc-4e9a-a097-940a16ecf03a|8ff19cad-99ce-4213-abea-9f316663255c|578615c4-cc20-42f4-b3b3-5ae1b1454e94|fb030780-41d2-48a6-8fa5-bc94538e60c1|d8011bb8-81b8-460f-b0a0-164455f6bfac)|\/project\/[^/]+\/tool\/(?:578615c4-cc20-42f4-b3b3-5ae1b1454e94|fb030780-41d2-48a6-8fa5-bc94538e60c1))(?:[/?#]|$)/i.test(url);
+	return isFlowRuntimeToolUrl(url);
 }
 function cancelCustomToolJob$1(jobId) {
 	customToolSessions.get(jobId)?.cancel();
@@ -1686,7 +1773,7 @@ var StudioBridgeSession = class {
 			waitForDebuggerOnStart: false,
 			flatten: false
 		});
-		if (await this.evaluate(`(() => [...document.querySelectorAll('iframe')].some((frame) => /\/flow-applet-runner\/shim\.html(?:[?#]|$)/i.test(String(frame.src || ''))))()`).catch(() => false)) {
+		if (await this.evaluate(`(() => [...document.querySelectorAll('iframe')].some((frame) => /\/flow-applet-runner\/shim\.html(?:[?#]|$)/i.test(String(frame.src || ''))))()`).catch(() => false) || isFreshRelayRuntime(runtimeUrl)) {
 			this.topLevelRelay = true;
 			await this.captureTrustedDocumentIdentity();
 			return;
@@ -1934,7 +2021,13 @@ var StudioBridgeSession = class {
 		}).sort((left, right) => Number(new URL(String(right.url)).hostname === "flow.google.com") - Number(new URL(String(left.url)).hostname === "flow.google.com"))[0];
 		if (!base?.id) throw new Error("Fresh Flow Video Relay Bridge needs a project media id for I2V: Flow workspace base tab was not found beside the published relay runtime.");
 		try {
-			await chrome.tabs.sendMessage(base.id, { action: "PING_STUDIO_ADAPTER" });
+			try {
+				await chrome.tabs.sendMessage(base.id, { action: "PING_STUDIO_ADAPTER" });
+			} catch {
+				await chrome.tabs.reload(base.id, { bypassCache: false });
+				await runtime.waitForTabComplete(base.id, 2e4);
+				await chrome.tabs.sendMessage(base.id, { action: "PING_STUDIO_ADAPTER" });
+			}
 			const resolved = await chrome.tabs.sendMessage(base.id, {
 				action: "RESOLVE_FLOW_REFERENCE",
 				jobId: this.job.jobId,
@@ -2369,9 +2462,9 @@ var StudioBridgeSession = class {
         const value = event.data;
         if (value && value.source === "studio-shot-bridge" && value.protocolVersion === 2) window[key].push(value);
       });
-      const runner = [...document.querySelectorAll("iframe")].find((item) => /flow-applet-runner\/shim\.html/i.test(String(item.getAttribute("src") || "")));
-      (runner?.contentWindow || window).postMessage(${JSON.stringify(request)}, "*");
-      return Boolean(runner);
+      const frames = [...document.querySelectorAll("iframe")].map((item) => item.contentWindow).filter(Boolean);
+      for (const frame of frames) frame.postMessage(${JSON.stringify(request)}, "*");
+      return frames.length > 0;
     })()`)) throw new Error("Flow Relay Bridge runner iframe was not found; intake was not dispatched.");
 		const readMessages = () => this.evaluate(`(() => window.__studioRelayMessages || [])()`);
 		const waitFor = async (types, timeoutMs) => {
@@ -2400,11 +2493,27 @@ var StudioBridgeSession = class {
 			}
 		};
 		await this.evaluate(`(() => {
-      const runner = [...document.querySelectorAll("iframe")].find((item) => /flow-applet-runner\/shim\.html/i.test(String(item.getAttribute("src") || "")));
-      if (!runner) return false;
-      runner.contentWindow.postMessage(${JSON.stringify(authorize)}, "*");
-      return true;
+      const frames = [...document.querySelectorAll("iframe")].map((item) => item.contentWindow).filter(Boolean);
+      for (const frame of frames) frame.postMessage(${JSON.stringify(authorize)}, "*");
+      return frames.length > 0;
     })()`);
+		await this.waitInner(`(() => [...document.querySelectorAll("button")].some((item) => /GENERATE VIDEO/i.test(String(item.textContent || "")) && !item.disabled))()`, 2e4, "authorized Flow Relay generate control");
+		if (this.job.settings?.preflightOnly === true) {
+			runtime.sendToDesktop({
+				type: "JOB_RESULT",
+				jobId: this.job.jobId,
+				status: "waiting_manual_action",
+				assets: [],
+				error: "Flow Relay protocol preflight passed without submitting or spending credit."
+			});
+			return null;
+		}
+		if (!await this.evaluateInner(`(() => {
+      const target = [...document.querySelectorAll("button")].find((item) => /GENERATE VIDEO/i.test(String(item.textContent || "")) && !item.disabled);
+      if (!target) return false;
+      target.click();
+      return true;
+    })()`)) throw new Error("Flow Relay generate control was not ready after authorization.");
 		runtime.sendStatus(this.job.jobId, "generating", "Generating through the published Flow Relay Bridge...", .75);
 		const resultMessage = await waitFor(["STUDIO_SHOT_RESULT", "STUDIO_SHOT_ERROR"], FLOW_RESULT_TIMEOUT_MS);
 		if (String(resultMessage.type) === "STUDIO_SHOT_ERROR") throw new Error(`Flow Relay Bridge returned ${String(resultMessage.payload?.code || resultMessage.error || "STUDIO_SHOT_ERROR")}.`);
@@ -2434,6 +2543,7 @@ var StudioBridgeSession = class {
 			const resolvedMediaId = await this.resolveFreshRelayMediaId(this.job.settings || {}, keyframe);
 			const configured = this.manifest(keyframe, references, resolvedMediaId);
 			const result = await this.runTopLevelRelay(configured.value, configured.durationSeconds, resolvedMediaId);
+			if (!result) return;
 			await this.deliverResult(result, keyframe, configured.durationSeconds, {
 				passed: true,
 				mode: "parent-window-relay"
@@ -2642,6 +2752,7 @@ async function downloadResultAssets(deps, job, assets) {
 		const result = await deps.downloadAsset(asset, job);
 		if (!result) errors.push(`Generated ${asset.type} could not be downloaded from the provider`);
 		else if (job?.task?.includes("video") && deps.resolvedResultAssetType(result, job) !== "video") errors.push(`Flow returned ${deps.resolvedResultAssetType(result, job)} media for a video job`);
+		else if ((job?.task === "image" || job?.task === "text_to_image") && deps.resolvedResultAssetType(result, job) === "video") errors.push("Flow returned video media for an image job; refusing to store it as a keyframe");
 		else downloaded.push(result);
 	} catch (error) {
 		errors.push(error instanceof Error ? error.message : String(error));
@@ -3507,7 +3618,7 @@ function isFlowProjectUrl$2(urlValue) {
 	if (!urlValue) return false;
 	try {
 		const url = new URL(urlValue);
-		return (url.hostname === "labs.google" || url.hostname === "labs.google.com" || url.hostname === "flow.google.com") && /(?:\/fx\/(?:[^/]+\/)?tools\/flow\/(?:project\/[^/]+(?:\/tools|\/edit\/[^/]+|\/(?:tool|tool-version)\/[^/]+)?|shared\/tool\/[^/]+)|\/project\/[^/]+(?:\/edit\/[^/]+|\/tool\/[^/]+)?)\/?$/i.test(url.pathname);
+		return (url.hostname === "labs.google" || url.hostname === "labs.google.com" || url.hostname === "flow.google.com") && /(?:\/fx\/(?:[^/]+\/)?tools\/flow\/(?:project\/[^/]+(?:\/tools|\/edit\/[^/]+|\/(?:tool|tool-version)\/[^/]+)?|shared\/tool\/[^/]+)|\/project\/[^/]+(?:\/edit\/[^/]+|\/tool\/[^/]+)?|\/shared\/tool\/[^/]+)\/?$/i.test(url.pathname);
 	} catch {
 		return false;
 	}
@@ -3520,24 +3631,6 @@ function chooseFlowProjectTab(activeFlowTab, projectTabs) {
 	const workspaceTabs = projectTabs.filter((tab) => !isFlowCustomToolUrl$2(tab.url));
 	if (activeFlowTab && isFlowProjectUrl$2(activeFlowTab.url) && !isFlowCustomToolUrl$2(activeFlowTab.url)) return activeFlowTab;
 	return (workspaceTabs.length ? workspaceTabs : projectTabs).sort((a, b) => providerTabScore("google-flow", b) - providerTabScore("google-flow", a))[0];
-}
-function isFlowCustomToolUrl$2(urlValue) {
-	if (!urlValue) return false;
-	try {
-		const url = new URL(urlValue);
-		return (url.hostname === "labs.google" || url.hostname === "labs.google.com" || url.hostname === "flow.google.com") && (/(?:\/tools\/flow\/(?:project\/[^/]+\/(?:tool|tool-version)\/|shared\/tool\/)[^/]+)/i.test(url.pathname) || /\/project\/[^/]+\/tool\/(?:578615c4-cc20-42f4-b3b3-5ae1b1454e94|fb030780-41d2-48a6-8fa5-bc94538e60c1)(?:[/?#]|$)/i.test(url.pathname));
-	} catch {
-		return false;
-	}
-}
-function isFlowRuntimeToolUrl(urlValue) {
-	if (!urlValue) return false;
-	try {
-		const url = new URL(urlValue);
-		return (url.hostname === "labs.google" || url.hostname === "labs.google.com" || url.hostname === "flow.google.com") && (/(?:\/tools\/flow\/(?:project\/[^/]+\/tool-version\/|shared\/tool\/)[^/]+(?:\/?$))/i.test(url.pathname) || /\/project\/[^/]+\/tool\/(?:578615c4-cc20-42f4-b3b3-5ae1b1454e94|fb030780-41d2-48a6-8fa5-bc94538e60c1)(?:\/?$)/i.test(url.pathname));
-	} catch {
-		return false;
-	}
 }
 async function activeFlowCustomToolTab$2() {
 	const [active] = await chrome.tabs.query({
@@ -3589,7 +3682,7 @@ async function findFlowProjectTab$2() {
 	const editorToolTabs = customToolTabs.filter((tab) => !isFlowRuntimeToolUrl(tab.url));
 	const activeFlowTab = activeTab?.id && providerTabMatches$2("google-flow", activeTab.url) ? activeTab : void 0;
 	return {
-		tab: chooseFlowProjectTab(activeFlowTab, projectTabs),
+		tab: chooseFlowProjectTab(activeFlowTab, projectTabs) || (activeFlowTab && isFlowCustomToolUrl$2(activeFlowTab.url) ? activeFlowTab : void 0),
 		activeFlowTab,
 		flowTabCount: flowTabs.length,
 		projectTabCount: projectTabs.length,
@@ -3772,6 +3865,10 @@ async function chatGptPageHasRateLimit$2(tabId) {
 var requestDesktopNativeClick$2;
 var debuggerSessionTails = /* @__PURE__ */ new Map();
 var pendingFileChooserNodes = /* @__PURE__ */ new Map();
+var NATIVE_CHOOSER_TIMEOUT_MS = 12e3;
+function boundedNativeChooser(operation) {
+	return Promise.race([operation, new Promise((_, reject) => setTimeout(() => reject(/* @__PURE__ */ new Error("Flow native upload chooser timed out; no file was selected.")), NATIVE_CHOOSER_TIMEOUT_MS))]);
+}
 if (chrome.debugger?.onEvent) chrome.debugger.onEvent.addListener((source, method, params) => {
 	if (method !== "Page.fileChooserOpened") return;
 	const tabId = Number(source.tabId || 0);
@@ -4180,7 +4277,7 @@ async function dispatchNativeFileInput$2(tabId, filePaths) {
 }
 async function dispatchNativeFileChooserUpload$2(tabId, x, y, filePaths) {
 	if (!chrome.debugger) throw new Error("Chrome debugger permission is not available.");
-	await withDebuggerSession(tabId, async () => {
+	await boundedNativeChooser(withDebuggerSession(tabId, async () => {
 		const target = { tabId };
 		await chrome.debugger.attach(target, "1.3");
 		let chooserNode = 0;
@@ -4219,7 +4316,7 @@ async function dispatchNativeFileChooserUpload$2(tabId, x, y, filePaths) {
 			chrome.debugger.onEvent.removeListener(onEvent);
 			await chrome.debugger.detach(target).catch(() => void 0);
 		}
-	});
+	}));
 }
 async function dispatchNativeCanvasDrag$2(tabId, startX, startY, endX, endY) {
 	if (!chrome.debugger) throw new Error("Chrome debugger permission is not available.");
@@ -5156,9 +5253,21 @@ async function dispatchCustomFlowJob(job, targetUrl) {
 	}
 	const flow = await findFlowProjectTab$1();
 	sendStatus$1(job.jobId, "opening_provider", `Flow tab scan: ${flow.flowTabCount} tabs, ${flow.projectTabCount} project, ${flow.customToolTabCount} custom-tool.`, .105);
-	await bindFlowWorkspace(job, targetUrl, flow);
+	if (String(job.settings?.flowMediaId || job.settings?.imageMediaId || "").trim() && String(job.settings?.sourceMode || job.settings?.flowVideoMode || "frames") === "frames" && isFlowCustomToolUrl$1(flow.activeFlowTab?.url)) {
+		const runtimeUrl = new URL(String(flow.activeFlowTab?.url));
+		runtimeUrl.pathname = runtimeUrl.pathname.replace(/\/tool\/[^/]+\/?$/i, "").replace(/\/+$/, "");
+		runtimeUrl.search = "";
+		runtimeUrl.hash = "";
+		job.conversationUrl = runtimeUrl.toString();
+		job.settings = {
+			...job.settings || {},
+			flowProjectUrl: job.conversationUrl,
+			providerWorkspaceUrl: job.conversationUrl
+		};
+		await persistActiveJobSnapshot$1(job);
+	} else await bindFlowWorkspace(job, targetUrl, flow);
 	let tab = await activeFlowCustomToolTab$1();
-	if (tab && !/(?:\/tools\/flow\/(?:project\/[^/]+\/tool-version\/|shared\/tool\/)[^/]+|\/project\/[^/]+\/tool\/(?:578615c4-cc20-42f4-b3b3-5ae1b1454e94|fb030780-41d2-48a6-8fa5-bc94538e60c1))(?:[/?#]|$)/i.test(String(tab.url || ""))) {
+	if (tab && !/(?:\/tools\/flow\/(?:project\/[^/]+\/tool-version\/|shared\/tool\/)[^/]+|\/project\/[^/]+\/tool\/(?:578615c4-cc20-42f4-b3b3-5ae1b1454e94|fb030780-41d2-48a6-8fa5-bc94538e60c1|64a29df4-340e-44ae-8a9e-3bf77056f9a7|f84d4d6a-ac30-4bfe-89fc-44e62c09f99e|1f79134e-f6ad-4589-903a-8fead23a6379)|\/shared\/tool\/f84d4d6a-ac30-4bfe-89fc-44e62c09f99e)(?:[/?#]|$)/i.test(String(tab.url || ""))) {
 		sendStatus$1(job.jobId, "opening_provider", "Flow đang mở bản DRAFT /tool/; bỏ qua tab chỉnh sửa và chỉ chấp nhận runtime /tool-version/ hoặc /shared/tool/ đã publish.", .108);
 		tab = void 0;
 	}
@@ -5179,7 +5288,7 @@ async function dispatchCustomFlowJob(job, targetUrl) {
 		tab = await chrome.tabs.get(reusable.id);
 		if (!isFlowCustomToolUrl$1(tab.url)) throw new Error("Google Flow is open, but Studio Shot Bridge is not attached. Open the shared Studio Shot Bridge tool in this signed-in Flow workspace, then retry.");
 	}
-	if (tab.url && /(?:\/tools\/flow\/(?:project\/[^/]+\/tool-version\/|shared\/tool\/)[^/]+|\/project\/[^/]+\/tool\/(?:578615c4-cc20-42f4-b3b3-5ae1b1454e94|fb030780-41d2-48a6-8fa5-bc94538e60c1))(?:[/?#]|$)/i.test(tab.url)) job.flowRuntimeUrl = tab.url;
+	if (tab.url && /(?:\/tools\/flow\/(?:project\/[^/]+\/tool-version\/|shared\/tool\/)[^/]+|\/project\/[^/]+\/tool\/(?:578615c4-cc20-42f4-b3b3-5ae1b1454e94|fb030780-41d2-48a6-8fa5-bc94538e60c1|64a29df4-340e-44ae-8a9e-3bf77056f9a7|f84d4d6a-ac30-4bfe-89fc-44e62c09f99e)|\/shared\/tool\/f84d4d6a-ac30-4bfe-89fc-44e62c09f99e)(?:[/?#]|$)/i.test(tab.url)) job.flowRuntimeUrl = tab.url;
 	if (tab.id) {
 		job.tabId = tab.id;
 		await ensureContentScript$1(job);

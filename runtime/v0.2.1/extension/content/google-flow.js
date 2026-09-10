@@ -1025,7 +1025,7 @@
 	async function ensureFlowProjectRoute$1(jobId) {
 		const match = location.pathname.match(/^(\/fx\/(?:[^/]+\/)?tools\/flow\/project\/[^/]+)/i);
 		if (!match) {
-			const shortProject = location.pathname.match(/^(\/project\/[^/]+)(?:\/edit\/[^/]+)?\/?$/i);
+			const shortProject = location.pathname.match(/^(\/project\/[^/]+)(?:\/(?:edit|tool|tool-version)\/[^/]+)?\/?$/i);
 			if (shortProject) {
 				if (location.pathname !== shortProject[1] || flowIsImageEditorSurface()) {
 					activeDeps$3.flowTrace(jobId, "Leaving the Flow image editor and restoring the project composer in the background.", .04, "opening_provider");
@@ -1099,6 +1099,38 @@
 			}
 		}
 		console.warn(`[Studio][Flow][${jobId}] Flow composer Video tab was not found.`, activeDeps$3.flowDebugSnapshot());
+		return false;
+	}
+	function composerShowsImageMode$1() {
+		const trigger = getComposerSettingsButton$1();
+		const text = trigger ? activeDeps$3.visibleText(trigger) : "";
+		const nativeTrigger = Array.from(document.querySelectorAll("button.settings-trigger-button, button[aria-label*='cài đặt' i], button[aria-label*='settings' i]")).filter((button) => activeDeps$3.isVisible(button)).at(-1);
+		const visible = `${nativeTrigger ? activeDeps$3.visibleText(nativeTrigger).replace(/\s+/g, " ").trim() : ""} ${text}`;
+		return /nano\s+banana|hình ảnh|\bimage\b/i.test(visible) && !/(^|\s)video(\s|·|$)|\bveo\b/i.test(visible);
+	}
+	async function ensureFlowImageComposerMode$1(jobId) {
+		if (composerShowsImageMode$1()) {
+			activeDeps$3.flowTrace(jobId, `Flow composer is already in Image mode (${activeDeps$3.compactText(composerSettingsText$1(), 80)}).`);
+			return true;
+		}
+		for (let attempt = 0; attempt < 3; attempt++) {
+			const menu = await openComposerSettingsMenu$1(jobId);
+			if (!menu) {
+				await activeDeps$3.humanPause(450, 850);
+				continue;
+			}
+			const imageResult = await activeDeps$3.clickVisibleText([
+				/^hình ảnh$/i,
+				/^image$/i,
+				/nano\s+banana/i
+			], menu);
+			if (imageResult.ok) {
+				activeDeps$3.flowTrace(jobId, `Flow composer switched to Image tab (${imageResult.text || "Image"}).`);
+				await activeDeps$3.humanPause(700, 1200);
+				if (composerShowsImageMode$1()) return true;
+			}
+		}
+		console.warn(`[Studio][Flow][${jobId}] Flow composer Image tab was not found.`, activeDeps$3.flowDebugSnapshot());
 		return false;
 	}
 	async function closeFlowSettingsPanelIfOpenUnbounded(jobId) {
@@ -1247,12 +1279,14 @@
 			getComposerSettingsButton: getComposerSettingsButton$1,
 			composerSettingsText: composerSettingsText$1,
 			composerShowsVideoMode: composerShowsVideoMode$1,
+			composerShowsImageMode: composerShowsImageMode$1,
 			composerShowsAspectRatio: composerShowsAspectRatio$1,
 			composerShowsDuration: composerShowsDuration$1,
 			isFlowAgentShellVisible: isFlowAgentShellVisible$1,
 			ensureFlowProjectRoute: ensureFlowProjectRoute$1,
 			openComposerSettingsMenu: openComposerSettingsMenu$1,
 			ensureFlowVideoComposerMode: ensureFlowVideoComposerMode$1,
+			ensureFlowImageComposerMode: ensureFlowImageComposerMode$1,
 			closeFlowSettingsPanelIfOpen: closeFlowSettingsPanelIfOpen$1,
 			ensureFlowAgentModeOff: ensureFlowAgentModeOff$1,
 			clickByIdSuffix: clickByIdSuffix$1,
@@ -1846,6 +1880,41 @@
 			dragTileToComposer: dragTileToComposer$1
 		};
 	}
+	var identities = new Set([
+		"61af9773-1ce9-4f36-a624-d010f05a53f2",
+		"6c907eac-e8e8-4040-8e46-e38e6cd0662b",
+		"4b879882-e1c1-4414-9e05-4202b33f1f31",
+		"08ee45bf-f7fc-4e9a-a097-940a16ecf03a",
+		"8ff19cad-99ce-4213-abea-9f316663255c",
+		"578615c4-cc20-42f4-b3b3-5ae1b1454e94",
+		"fb030780-41d2-48a6-8fa5-bc94538e60c1",
+		"64a29df4-340e-44ae-8a9e-3bf77056f9a7",
+		"d8011bb8-81b8-460f-b0a0-164455f6bfac",
+		"f84d4d6a-ac30-4bfe-89fc-44e62c09f99e",
+		"1f79134e-f6ad-4589-903a-8fead23a6379"
+	]);
+	var host = /^(?:labs\.google(?:\.com)?|flow\.google\.com)$/i;
+	var canonical = /^\/fx\/(?:[^/]+\/)?tools\/flow\/(?:project\/([^/]+)\/tool-version\/([^/]+)|shared\/tool\/([^/]+))\/?$/i;
+	var legacy = /^(?:\/project\/([^/]+)\/tool\/([^/]+)|\/shared\/tool\/([^/]+))\/?$/i;
+	function parse(value) {
+		if (!value) return null;
+		try {
+			const url = new URL(value);
+			if (!host.test(url.hostname)) return null;
+			const match = url.pathname.match(canonical) || url.pathname.match(legacy);
+			if (!match) return null;
+			return {
+				url,
+				identity: match[2] || match[3] || "",
+				published: Boolean(url.pathname.includes("tool-version") || url.pathname.includes("/shared/tool/") || identities.has((match[2] || match[3] || "").toLowerCase()))
+			};
+		} catch {
+			return null;
+		}
+	}
+	function isFlowCustomToolUrl(value) {
+		return Boolean(parse(value));
+	}
 	//#endregion
 	//#region ../../packages/extension-providers/src/google-flow/flow-direct-bridge.ts
 	function sendSocketMessage(socket, message) {
@@ -1927,9 +1996,8 @@
 	function createDirectFlowBridge(options) {
 		const sendMessage = (message) => sendSocketMessage(options.host.__studioFlowDirectBridgeSocket, message);
 		const connect = () => {
-			const publishedProjectTool = /\/project\/[^/]+\/tool\/(?:578615c4-cc20-42f4-b3b3-5ae1b1454e94|fb030780-41d2-48a6-8fa5-bc94538e60c1)(?:[/?#]|$)/i.test(location.pathname);
 			const shortProjectWorkspace = /^\/project\/[^/]+(?:\/edit\/[^/]+)?\/?$/i.test(location.pathname);
-			if ((!/\/tools\/flow\/project\//i.test(location.pathname) || /\/tools\/flow\/project\/[^/]+\/tool\/[^/]+/i.test(location.pathname)) && !publishedProjectTool && !shortProjectWorkspace) return;
+			if ((!/\/tools\/flow\/project\//i.test(location.pathname) || isFlowCustomToolUrl(location.href)) && !shortProjectWorkspace) return;
 			const existing = options.host.__studioFlowDirectBridgeSocket;
 			if (existing?.readyState === WebSocket.OPEN || existing?.readyState === WebSocket.CONNECTING) return;
 			const socket = new WebSocket(options.bridgeUrl);
@@ -1956,161 +2024,6 @@
 			stop,
 			sendMessage
 		};
-	}
-	//#endregion
-	//#region ../../packages/extension-providers/src/google-flow/flow-text-utils.ts
-	/** Shared, provider-local DOM text primitives. Keeping these outside the
-	* content orchestrator makes selector/recovery code depend on one small
-	* contract instead of reimplementing normalization in each flow. */
-	function visibleText(element) {
-		return ((element.textContent || "") + " " + (element.getAttribute("aria-label") || "") + " " + (element.getAttribute("title") || "")).trim();
-	}
-	function isVisible(element) {
-		const rect = element.getBoundingClientRect();
-		return rect.width > 0 && rect.height > 0;
-	}
-	function compactText(value, maxLength = 160) {
-		const text = value.replace(/\s+/g, " ").trim();
-		return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
-	}
-	function flowEditableText(element) {
-		if (element instanceof HTMLTextAreaElement || element instanceof HTMLInputElement) return element.value || "";
-		const clone = element.cloneNode(true);
-		clone.querySelectorAll("[data-slate-placeholder]").forEach((node) => node.remove());
-		return clone.textContent || "";
-	}
-	function normalizedFlowControlText(element) {
-		return visibleText(element).replace(/play_circle|image|crop_[a-z0-9_]+|arrow_drop_down/gi, " ").replace(/\s+/g, " ").trim();
-	}
-	//#endregion
-	//#region ../../packages/extension-providers/src/google-flow/flow-result-dom.ts
-	function flowTilePercent$1(tile) {
-		const match = (tile.innerText || "").match(/(\d{1,3})\s*%/);
-		if (!match) return null;
-		const value = Number(match[1]);
-		return Number.isFinite(value) ? Math.max(0, Math.min(value, 100)) : null;
-	}
-	function mediaElementsIn$1(scope, selectors) {
-		return selectors.flatMap((selector) => Array.from(scope.querySelectorAll(selector)));
-	}
-	/** Flow's current gallery uses custom elements instead of data-tile-id nodes. */
-	var FLOW_RESULT_TILE_SELECTOR = "[data-tile-id], flow-grid-tile-container, flow-video-tile";
-	function flowResultTiles(root = document) {
-		return Array.from(root.querySelectorAll(FLOW_RESULT_TILE_SELECTOR));
-	}
-	function flowResultTileId(tile, mediaUrls = []) {
-		const directId = tile.dataset.tileId || tile.getAttribute("data-tile-id") || tile.dataset.mediaId || tile.getAttribute("data-media-id") || "";
-		if (directId) return directId;
-		const mediaId = tile.querySelector("[data-media-id]")?.dataset.mediaId || "";
-		if (mediaId) return mediaId;
-		const mediaUrl = mediaUrls[0] || tile.querySelector("img")?.currentSrc || tile.querySelector("video")?.currentSrc || "";
-		if (mediaUrl) return `media:${mediaUrl}`;
-		const label = tile.getAttribute("aria-label") || tile.getAttribute("title") || "";
-		return label ? `label:${label}` : "";
-	}
-	function closestFlowResultTile$1(element) {
-		return element.closest(FLOW_RESULT_TILE_SELECTOR);
-	}
-	function flowTileLinks$1(tile) {
-		if (!tile) return [];
-		return Array.from(tile.querySelectorAll("a[href]")).map((anchor) => {
-			try {
-				return new URL(anchor.href, location.href).href;
-			} catch {
-				return anchor.href;
-			}
-		}).filter(Boolean);
-	}
-	//#endregion
-	//#region ../../packages/extension-providers/src/google-flow/flow-tile-primitives.ts
-	function flowImageTileRoot(element) {
-		return element.closest(`[data-tile-id], flow-grid-tile-container, flow-video-tile, listboxoption, button, [role='button'], a`) || element;
-	}
-	function imageLooksLikeFlowMedia(image) {
-		if (!image.complete || image.naturalWidth <= 0 || image.naturalHeight <= 0) return false;
-		const rect = image.getBoundingClientRect();
-		if (rect.width < 72 || rect.height < 48) return false;
-		const alt = image.alt || "";
-		return !(/profile|avatar|hồ sơ người dùng|user/i.test(alt) && rect.width < 180);
-	}
-	function tileCandidateScore(tile) {
-		const text = visibleText(tile);
-		return (tile.dataset.tileId ? 100 : 0) + (tile.querySelector("[data-tile-id]") ? 30 : 0) + (/asset_[a-z0-9_-]+\.(png|jpe?g|webp)/i.test(text) ? 20 : 0) + (text ? 5 : 0);
-	}
-	function currentTileIds() {
-		return new Set(flowResultTiles().map((tile) => flowResultTileId(tile, tileMediaUrls$1(tile, (scope) => Array.from(scope.querySelectorAll("img, video, source"))))).filter(Boolean));
-	}
-	function tileStableText(tile) {
-		return compactText([
-			tile.innerText || "",
-			tile.getAttribute("aria-label") || "",
-			tile.getAttribute("title") || "",
-			tile.dataset.tileId || ""
-		].join(" "), 600);
-	}
-	function tileMediaUrls$1(tile, mediaElementsIn) {
-		const selfUrl = tile instanceof HTMLImageElement || tile instanceof HTMLVideoElement ? tile.currentSrc || tile.src : tile instanceof HTMLSourceElement ? tile.src : tile instanceof HTMLAnchorElement ? tile.href : "";
-		return Array.from(new Set([selfUrl, ...mediaElementsIn(tile).map((element) => element.src || element.href || element.src)].filter(Boolean)));
-	}
-	//#endregion
-	//#region ../../packages/extension-providers/src/google-flow/flow-media-picker-options.ts
-	function mediaPickerReferenceOptions(picker) {
-		const pickerRect = picker.getBoundingClientRect();
-		const conventionalCandidates = conventionalMediaPickerOptions(picker, pickerRect);
-		const structuralFilenameRows = structuralMediaPickerRows(picker, pickerRect);
-		return [...conventionalCandidates, ...structuralFilenameRows].filter((element, index, list) => list.indexOf(element) === index).sort(compareMediaPickerOptions);
-	}
-	function conventionalMediaPickerOptions(picker, pickerRect) {
-		return Array.from(picker.querySelectorAll("[data-tile-id], listboxoption, [role='option'], button, [role='button'], img")).map((element) => element.closest("[data-tile-id], listboxoption, [role='option']") || element.closest("button, [role='button']") || element).filter((element, index, list) => list.indexOf(element) === index).filter((element) => isConventionalMediaOption(element, pickerRect));
-	}
-	function isConventionalMediaOption(element, pickerRect) {
-		if (!isVisible(element)) return false;
-		const rect = element.getBoundingClientRect();
-		if (!mediaOptionGeometryIsValid(rect, pickerRect)) return false;
-		const image = element instanceof HTMLImageElement ? element : element.querySelector("img");
-		const text = `${visibleText(element)} ${image?.alt || ""}`.trim();
-		return !mediaOptionTextIsControl(text) && !mediaOptionTextNeedsImage(text, image) && (/\.(png|jpe?g|webp)|asset_/i.test(text) || Boolean(image && rect.height <= Math.max(80, pickerRect.height * .9)));
-	}
-	function mediaOptionGeometryIsValid(rect, pickerRect) {
-		const largePickerImage = rect.width >= 36 && rect.height > 92 && rect.height <= Math.max(120, pickerRect.height * .9);
-		if (rect.width < 36 || rect.height < 24 || rect.width > 340 || !largePickerImage && rect.height > 92) return false;
-		return pickerRect.width <= 0 || pickerRect.height <= 0 || rect.left >= pickerRect.left - 4 && rect.right <= pickerRect.right + 4 && rect.top >= pickerRect.top - 4 && rect.bottom <= pickerRect.bottom + 4;
-	}
-	function mediaOptionTextIsControl(text) {
-		return /arrow_back|quay lại|dashboard|tất cả nội dung|xem hình ảnh|xem video|google flow|cài đặt|settings|help|trash|delete/i.test(text);
-	}
-	function mediaOptionTextNeedsImage(text, image) {
-		return /thêm vào câu lệnh|add to prompt|hình ảnh|tệp tải lên|search|gần đây/i.test(text) && !image;
-	}
-	function structuralMediaRowMatches(element, pickerRect) {
-		if (!isVisible(element)) return false;
-		const rect = element.getBoundingClientRect();
-		if (rect.width < 220 || rect.height < 44 || rect.height > 110) return false;
-		if (pickerRect.width > 0 && pickerRect.height > 0 && (rect.left < pickerRect.left - 4 || rect.right > pickerRect.right + 4 || rect.top < pickerRect.top - 4 || rect.bottom > pickerRect.bottom + 4)) return false;
-		return (compactText(visibleText(element), 240).match(/[a-z0-9_.-]+\.(?:png|jpe?g|webp)/gi) || []).length === 1;
-	}
-	function structuralMediaRowIsNested(candidate, other) {
-		if (other === candidate || !candidate.contains(other)) return false;
-		const candidateRect = candidate.getBoundingClientRect();
-		const otherRect = other.getBoundingClientRect();
-		return otherRect.width * otherRect.height > 0 && otherRect.width * otherRect.height < candidateRect.width * candidateRect.height;
-	}
-	function structuralMediaPickerRows(picker, pickerRect) {
-		return Array.from(picker.querySelectorAll("div")).filter((element) => structuralMediaRowMatches(element, pickerRect)).filter((candidate, _index, candidates) => !candidates.some((other) => structuralMediaRowIsNested(candidate, other)));
-	}
-	function compareMediaPickerOptions(left, right) {
-		const leftNamed = /\.(png|jpe?g|webp)|asset_/i.test(visibleText(left)) ? 0 : 1;
-		const rightNamed = /\.(png|jpe?g|webp)|asset_/i.test(visibleText(right)) ? 0 : 1;
-		const leftRect = left.getBoundingClientRect();
-		const rightRect = right.getBoundingClientRect();
-		return leftNamed - rightNamed || leftRect.top - rightRect.top || leftRect.left - rightRect.left;
-	}
-	function compareStartFrameOptions(left, right) {
-		const leftRole = left.getAttribute("role") === "option" ? 0 : 1;
-		const rightRole = right.getAttribute("role") === "option" ? 0 : 1;
-		const leftRect = left.getBoundingClientRect();
-		const rightRect = right.getBoundingClientRect();
-		return leftRole - rightRole || leftRect.height - rightRect.height || leftRect.top - rightRect.top || leftRect.left - rightRect.left;
 	}
 	//#endregion
 	//#region ../../packages/extension-providers/src/google-flow/flow-result-tiles.ts
@@ -2721,7 +2634,7 @@
 		return true;
 	}
 	function restoreProjectRoute(payload, deps) {
-		if (!/\/tools\/flow\/project\/[^/]+\/edit\//i.test(location.pathname)) return false;
+		if (!/(?:\/tools\/flow\/project\/[^/]+|\/project\/[^/]+)\/edit\//i.test(location.pathname)) return false;
 		const basePath = location.pathname.replace(/\/edit\/.*$/i, "");
 		sessionStorage.setItem(deps.routeHandoffKey, JSON.stringify({
 			payload,
@@ -2748,6 +2661,161 @@
 	}
 	function createFlowJobDispatcher(deps) {
 		return (payload) => dispatchFlowJobOnce(payload, deps);
+	}
+	//#endregion
+	//#region ../../packages/extension-providers/src/google-flow/flow-text-utils.ts
+	/** Shared, provider-local DOM text primitives. Keeping these outside the
+	* content orchestrator makes selector/recovery code depend on one small
+	* contract instead of reimplementing normalization in each flow. */
+	function visibleText(element) {
+		return ((element.textContent || "") + " " + (element.getAttribute("aria-label") || "") + " " + (element.getAttribute("title") || "")).trim();
+	}
+	function isVisible(element) {
+		const rect = element.getBoundingClientRect();
+		return rect.width > 0 && rect.height > 0;
+	}
+	function compactText(value, maxLength = 160) {
+		const text = value.replace(/\s+/g, " ").trim();
+		return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
+	}
+	function flowEditableText(element) {
+		if (element instanceof HTMLTextAreaElement || element instanceof HTMLInputElement) return element.value || "";
+		const clone = element.cloneNode(true);
+		clone.querySelectorAll("[data-slate-placeholder]").forEach((node) => node.remove());
+		return clone.textContent || "";
+	}
+	function normalizedFlowControlText(element) {
+		return visibleText(element).replace(/play_circle|image|crop_[a-z0-9_]+|arrow_drop_down/gi, " ").replace(/\s+/g, " ").trim();
+	}
+	//#endregion
+	//#region ../../packages/extension-providers/src/google-flow/flow-result-dom.ts
+	function flowTilePercent$1(tile) {
+		const match = (tile.innerText || "").match(/(\d{1,3})\s*%/);
+		if (!match) return null;
+		const value = Number(match[1]);
+		return Number.isFinite(value) ? Math.max(0, Math.min(value, 100)) : null;
+	}
+	function mediaElementsIn$1(scope, selectors) {
+		return selectors.flatMap((selector) => Array.from(scope.querySelectorAll(selector)));
+	}
+	/** Flow's current gallery uses custom elements instead of data-tile-id nodes. */
+	var FLOW_RESULT_TILE_SELECTOR = "[data-tile-id], flow-grid-tile-container, flow-video-tile";
+	function flowResultTiles(root = document) {
+		return Array.from(root.querySelectorAll(FLOW_RESULT_TILE_SELECTOR));
+	}
+	function flowResultTileId(tile, mediaUrls = []) {
+		const directId = tile.dataset.tileId || tile.getAttribute("data-tile-id") || tile.dataset.mediaId || tile.getAttribute("data-media-id") || "";
+		if (directId) return directId;
+		const mediaId = tile.querySelector("[data-media-id]")?.dataset.mediaId || "";
+		if (mediaId) return mediaId;
+		const mediaUrl = mediaUrls[0] || tile.querySelector("img")?.currentSrc || tile.querySelector("video")?.currentSrc || "";
+		if (mediaUrl) return `media:${mediaUrl}`;
+		const label = tile.getAttribute("aria-label") || tile.getAttribute("title") || "";
+		return label ? `label:${label}` : "";
+	}
+	function closestFlowResultTile$1(element) {
+		return element.closest(FLOW_RESULT_TILE_SELECTOR);
+	}
+	function flowTileLinks$1(tile) {
+		if (!tile) return [];
+		return Array.from(tile.querySelectorAll("a[href]")).map((anchor) => {
+			try {
+				return new URL(anchor.href, location.href).href;
+			} catch {
+				return anchor.href;
+			}
+		}).filter(Boolean);
+	}
+	//#endregion
+	//#region ../../packages/extension-providers/src/google-flow/flow-tile-primitives.ts
+	function flowImageTileRoot(element) {
+		return element.closest(`[data-tile-id], flow-grid-tile-container, flow-video-tile, listboxoption, button, [role='button'], a`) || element;
+	}
+	function imageLooksLikeFlowMedia(image) {
+		if (!image.complete || image.naturalWidth <= 0 || image.naturalHeight <= 0) return false;
+		const rect = image.getBoundingClientRect();
+		if (rect.width < 72 || rect.height < 48) return false;
+		const alt = image.alt || "";
+		return !(/profile|avatar|hồ sơ người dùng|user/i.test(alt) && rect.width < 180);
+	}
+	function tileCandidateScore(tile) {
+		const text = visibleText(tile);
+		return (tile.dataset.tileId ? 100 : 0) + (tile.querySelector("[data-tile-id]") ? 30 : 0) + (/asset_[a-z0-9_-]+\.(png|jpe?g|webp)/i.test(text) ? 20 : 0) + (text ? 5 : 0);
+	}
+	function currentTileIds() {
+		return new Set(flowResultTiles().map((tile) => flowResultTileId(tile, tileMediaUrls$1(tile, (scope) => Array.from(scope.querySelectorAll("img, video, source"))))).filter(Boolean));
+	}
+	function tileStableText(tile) {
+		return compactText([
+			tile.innerText || "",
+			tile.getAttribute("aria-label") || "",
+			tile.getAttribute("title") || "",
+			tile.dataset.tileId || ""
+		].join(" "), 600);
+	}
+	function tileMediaUrls$1(tile, mediaElementsIn) {
+		const selfUrl = tile instanceof HTMLImageElement || tile instanceof HTMLVideoElement ? tile.currentSrc || tile.src : tile instanceof HTMLSourceElement ? tile.src : tile instanceof HTMLAnchorElement ? tile.href : "";
+		return Array.from(new Set([selfUrl, ...mediaElementsIn(tile).map((element) => element.src || element.href || element.src)].filter(Boolean)));
+	}
+	//#endregion
+	//#region ../../packages/extension-providers/src/google-flow/flow-media-picker-options.ts
+	function mediaPickerReferenceOptions(picker) {
+		const pickerRect = picker.getBoundingClientRect();
+		const conventionalCandidates = conventionalMediaPickerOptions(picker, pickerRect);
+		const structuralFilenameRows = structuralMediaPickerRows(picker, pickerRect);
+		return [...conventionalCandidates, ...structuralFilenameRows].filter((element, index, list) => list.indexOf(element) === index).sort(compareMediaPickerOptions);
+	}
+	function conventionalMediaPickerOptions(picker, pickerRect) {
+		return Array.from(picker.querySelectorAll("[data-tile-id], listboxoption, [role='option'], button, [role='button'], img")).map((element) => element.closest("[data-tile-id], listboxoption, [role='option']") || element.closest("button, [role='button']") || element).filter((element, index, list) => list.indexOf(element) === index).filter((element) => isConventionalMediaOption(element, pickerRect));
+	}
+	function isConventionalMediaOption(element, pickerRect) {
+		if (!isVisible(element)) return false;
+		const rect = element.getBoundingClientRect();
+		if (!mediaOptionGeometryIsValid(rect, pickerRect)) return false;
+		const image = element instanceof HTMLImageElement ? element : element.querySelector("img");
+		const text = `${visibleText(element)} ${image?.alt || ""}`.trim();
+		return !mediaOptionTextIsControl(text) && !mediaOptionTextNeedsImage(text, image) && (/\.(png|jpe?g|webp)|asset_/i.test(text) || Boolean(image && rect.height <= Math.max(80, pickerRect.height * .9)));
+	}
+	function mediaOptionGeometryIsValid(rect, pickerRect) {
+		const largePickerImage = rect.width >= 36 && rect.height > 92 && rect.height <= Math.max(120, pickerRect.height * .9);
+		if (rect.width < 36 || rect.height < 24 || rect.width > 340 || !largePickerImage && rect.height > 92) return false;
+		return pickerRect.width <= 0 || pickerRect.height <= 0 || rect.left >= pickerRect.left - 4 && rect.right <= pickerRect.right + 4 && rect.top >= pickerRect.top - 4 && rect.bottom <= pickerRect.bottom + 4;
+	}
+	function mediaOptionTextIsControl(text) {
+		return /arrow_back|quay lại|dashboard|tất cả nội dung|xem hình ảnh|xem video|google flow|cài đặt|settings|help|trash|delete/i.test(text);
+	}
+	function mediaOptionTextNeedsImage(text, image) {
+		return /thêm vào câu lệnh|add to prompt|hình ảnh|tệp tải lên|search|gần đây/i.test(text) && !image;
+	}
+	function structuralMediaRowMatches(element, pickerRect) {
+		if (!isVisible(element)) return false;
+		const rect = element.getBoundingClientRect();
+		if (rect.width < 220 || rect.height < 44 || rect.height > 110) return false;
+		if (pickerRect.width > 0 && pickerRect.height > 0 && (rect.left < pickerRect.left - 4 || rect.right > pickerRect.right + 4 || rect.top < pickerRect.top - 4 || rect.bottom > pickerRect.bottom + 4)) return false;
+		return (compactText(visibleText(element), 240).match(/[a-z0-9_.-]+\.(?:png|jpe?g|webp)/gi) || []).length === 1;
+	}
+	function structuralMediaRowIsNested(candidate, other) {
+		if (other === candidate || !candidate.contains(other)) return false;
+		const candidateRect = candidate.getBoundingClientRect();
+		const otherRect = other.getBoundingClientRect();
+		return otherRect.width * otherRect.height > 0 && otherRect.width * otherRect.height < candidateRect.width * candidateRect.height;
+	}
+	function structuralMediaPickerRows(picker, pickerRect) {
+		return Array.from(picker.querySelectorAll("div")).filter((element) => structuralMediaRowMatches(element, pickerRect)).filter((candidate, _index, candidates) => !candidates.some((other) => structuralMediaRowIsNested(candidate, other)));
+	}
+	function compareMediaPickerOptions(left, right) {
+		const leftNamed = /\.(png|jpe?g|webp)|asset_/i.test(visibleText(left)) ? 0 : 1;
+		const rightNamed = /\.(png|jpe?g|webp)|asset_/i.test(visibleText(right)) ? 0 : 1;
+		const leftRect = left.getBoundingClientRect();
+		const rightRect = right.getBoundingClientRect();
+		return leftNamed - rightNamed || leftRect.top - rightRect.top || leftRect.left - rightRect.left;
+	}
+	function compareStartFrameOptions(left, right) {
+		const leftRole = left.getAttribute("role") === "option" ? 0 : 1;
+		const rightRole = right.getAttribute("role") === "option" ? 0 : 1;
+		const leftRect = left.getBoundingClientRect();
+		const rightRect = right.getBoundingClientRect();
+		return leftRole - rightRole || leftRect.height - rightRect.height || leftRect.top - rightRect.top || leftRect.left - rightRect.left;
 	}
 	//#endregion
 	//#region ../../packages/extension-providers/src/google-flow/flow-reference-identity.ts
@@ -2829,9 +2897,12 @@
 		return flowComposerLooksVideoReady$1(runtime, payload);
 	}
 	async function selectFlowVideoSourceMode$1(runtime, jobId, payload) {
-		const { isVideoJob, composerShowsVideoMode, composerShowsAspectRatio, composerShowsDuration, sleep, getComposerRoot, openFlowComposerFromProjectGrid, flowTrace, ensureFlowVideoComposerMode, clickInComposerSettingsBounded, humanPause, flowStartOrEndFrameSlots, visibleText, clickFlowFrameSlot, closeFlowSettingsPanelIfOpen, resolveProviderVideoDuration } = runtime;
+		const { isVideoJob, composerShowsVideoMode, composerShowsImageMode, composerShowsAspectRatio, composerShowsDuration, sleep, getComposerRoot, openFlowComposerFromProjectGrid, flowTrace, ensureFlowVideoComposerMode, ensureFlowImageComposerMode, clickInComposerSettingsBounded, humanPause, flowStartOrEndFrameSlots, visibleText, clickFlowFrameSlot, closeFlowSettingsPanelIfOpen, resolveProviderVideoDuration } = runtime;
 		const missing = [];
-		if (!isVideoJob(payload)) return missing;
+		if (!isVideoJob(payload)) {
+			if (!await ensureFlowImageComposerMode(jobId)) missing.push("Image mode");
+			return missing;
+		}
 		const sourceMode = flowVideoSourceMode$1(runtime, payload);
 		const composerSurfaceReady = Boolean(getComposerRoot() || runtime.activeFlowPromptEditor?.());
 		if (sourceMode === "frames" && !composerSurfaceReady) {
@@ -2899,11 +2970,15 @@
 		flowTrace(jobId, `Flow duration mapped from ${Number(payload.settings?.timelineDurationSec || durationSec)}s timeline shot to supported ${flowDuration}s render and confirmed.`, .18);
 	}
 	async function applyFlowSettingsForJob$1(runtime, jobId, payload) {
-		const { isVideoJob, composerShowsVideoMode, composerShowsAspectRatio, composerShowsDuration, sleep, getComposerRoot, openFlowComposerFromProjectGrid, flowTrace, ensureFlowVideoComposerMode, clickInComposerSettingsBounded, humanPause, flowStartOrEndFrameSlots, visibleText, clickFlowFrameSlot, closeFlowSettingsPanelIfOpen, resolveProviderVideoDuration } = runtime;
+		const { isVideoJob, composerShowsVideoMode, composerShowsImageMode, composerShowsAspectRatio, composerShowsDuration, sleep, getComposerRoot, openFlowComposerFromProjectGrid, flowTrace, ensureFlowVideoComposerMode, ensureFlowImageComposerMode, clickInComposerSettingsBounded, humanPause, flowStartOrEndFrameSlots, visibleText, clickFlowFrameSlot, closeFlowSettingsPanelIfOpen, resolveProviderVideoDuration } = runtime;
 		const missing = [];
 		const aspectRatio = String(payload.settings?.aspectRatio || "");
 		const durationSec = Number(payload.settings?.durationSec || 0);
 		missing.push(...await selectFlowVideoSourceMode$1(runtime, jobId, payload));
+		if (!isVideoJob(payload) && (composerShowsVideoMode() || !composerShowsImageMode() || missing.includes("Image mode"))) {
+			flowTrace(jobId, "Flow image mode was not confirmed; refusing to submit an image job into the Video composer.", .19);
+			return Array.from(new Set([...missing, "Image mode not confirmed"]));
+		}
 		const missingAspectRatio = await applyFlowAspectRatio$1(runtime, jobId, aspectRatio);
 		if (missingAspectRatio) missing.push(missingAspectRatio);
 		if (composerShowsVideoMode() && (!aspectRatio || composerShowsAspectRatio(aspectRatio)) && (!durationSec || composerShowsDuration(durationSec))) {
@@ -3987,7 +4062,10 @@
 	var bridgeCall = bridgeCall$1;
 	var lastFlowValidationFailure = "";
 	function isVideoJob(payload) {
-		return payload.task.includes("video") || payload.settings?.resultType === "video" || payload.settings?.mode === "video";
+		const requestedMode = String(payload.settings?.mode || payload.settings?.providerMode || payload.settings?.flowResultType || payload.settings?.resultType || "").toLowerCase();
+		if (requestedMode === "image") return false;
+		if (requestedMode === "video") return true;
+		return String(payload.task || "").includes("video");
 	}
 	async function sleep(ms) {
 		return new Promise((resolve) => setTimeout(resolve, ms));
@@ -4120,7 +4198,7 @@
 		return true;
 	}
 	async function ensureFlowWorkspace(jobId) {
-		if (!/\/fx\/(?:[^/]+\/)?tools\/flow\/project\/[^/]+|^\/project\/[^/]+(?:\/edit\/[^/]+)?\/?$/i.test(location.pathname)) {
+		if (!/\/fx\/(?:[^/]+\/)?tools\/flow\/project\/[^/]+|^\/project\/[^/]+(?:\/(?:edit|tool|tool-version)\/[^/]+)?\/?$/i.test(location.pathname)) {
 			reportResult(jobId, "waiting_manual_action", void 0, "Google Flow must be opened on a project URL like /fx/vi/tools/flow/project/... before video automation can run.");
 			return false;
 		}
@@ -4244,7 +4322,7 @@
 		waitForComposerReference: waitForComposerReference$1,
 		waitForPromptAttachmentIncrease: waitForPromptAttachmentIncrease$1
 	});
-	var { getActiveSettingsPanel, getComposerSettingsMenu, getComposerSettingsButton, composerSettingsText, composerShowsVideoMode, composerShowsAspectRatio, composerShowsDuration, isFlowAgentShellVisible, ensureFlowProjectRoute, openComposerSettingsMenu, ensureFlowVideoComposerMode, closeFlowSettingsPanelIfOpen, ensureFlowAgentModeOff, clickByIdSuffix, clickInComposerSettings, clickInComposerSettingsBounded } = createFlowComposerDom({
+	var { getActiveSettingsPanel, getComposerSettingsMenu, getComposerSettingsButton, composerSettingsText, composerShowsVideoMode, composerShowsImageMode, composerShowsAspectRatio, composerShowsDuration, isFlowAgentShellVisible, ensureFlowProjectRoute, openComposerSettingsMenu, ensureFlowVideoComposerMode, ensureFlowImageComposerMode, closeFlowSettingsPanelIfOpen, ensureFlowAgentModeOff, clickByIdSuffix, clickInComposerSettings, clickInComposerSettingsBounded } = createFlowComposerDom({
 		SELECTORS,
 		activeFlowPromptEditor,
 		clickElementNative,
@@ -4287,6 +4365,7 @@
 	var { aspectRatioSuffix, flowVideoSourceMode, flowComposerLooksVideoReady, waitForFlowComposerVideoReady, selectFlowVideoSourceMode, focusFlowStartFrameSlot, applyFlowAspectRatio, applyFlowDuration, applyFlowSettingsForJob } = createFlowComposerSettings({
 		isVideoJob,
 		composerShowsVideoMode,
+		composerShowsImageMode,
 		composerShowsAspectRatio,
 		composerShowsDuration,
 		sleep,
@@ -4295,6 +4374,7 @@
 		openFlowComposerFromProjectGrid,
 		flowTrace,
 		ensureFlowVideoComposerMode,
+		ensureFlowImageComposerMode,
 		clickInComposerSettingsBounded,
 		humanPause,
 		flowStartOrEndFrameSlots,
@@ -4682,6 +4762,55 @@
 						reused: false
 					};
 				} catch {}
+			}
+		}
+		if (selection.preferDirectUpload) {
+			const localFilePath = referenceLocalFilePath(selection.reference);
+			const uploadMenu = await openFlowLibraryUploadMenu(selection.jobId).catch(() => null);
+			const chooserButton = (uploadMenu ? Array.from(uploadMenu.querySelectorAll("button, [role='button'], [role='menuitem'], [role='option'], div")) : flowLibraryUploadButtons()).filter(isVisible).filter((element) => /(?:tải nội dung nghe nhìn lên|tệp tải lên|tải lên|upload media|uploaded media|upload)/i.test(`${element.getAttribute("aria-label") || ""} ${visibleText(element)}`)).sort((left, right) => visibleText(left).length - visibleText(right).length)[0];
+			if (localFilePath && chooserButton) {
+				const rect = chooserButton.getBoundingClientRect();
+				if ((await chrome.runtime.sendMessage({
+					source: "google-flow-adapter",
+					type: "NATIVE_UPLOAD_FILE_CHOOSER",
+					x: rect.left + rect.width / 2,
+					y: rect.top + rect.height / 2,
+					filePaths: [localFilePath]
+				}).catch(() => ({ ok: false })))?.ok) {
+					await humanPause(1200, 1800);
+					const mediaId = await (async () => {
+						for (let attempt = 0; attempt < 10; attempt += 1) {
+							const id = await lookupFlowProjectMediaId(selection.reference, true);
+							if (id) return id;
+							await humanPause(350, 650);
+						}
+						return "";
+					})();
+					if (mediaId) {
+						const tile = document.createElement("div");
+						tile.setAttribute("data-media-id", mediaId);
+						return {
+							attachedDirectly: false,
+							tile,
+							reference: selection.reference,
+							reused: false
+						};
+					}
+				}
+			}
+			try {
+				if (await uploadReferenceThroughStartFramePicker(selection.jobId, selection.reference)) {
+					const tile = await waitForExactUploadedReferenceTile(selection.jobId, selection.reference, currentTileBaseline(), 8e3) || findExistingUploadedReferenceTile(selection.reference);
+					const mediaId = tile && flowMediaIdFromTile(tile);
+					if (tile && mediaId) return {
+						attachedDirectly: false,
+						tile,
+						reference: selection.reference,
+						reused: false
+					};
+				}
+			} catch (error) {
+				flowTrace(selection.jobId, `Flow native chooser fallback did not resolve ${referenceRequiredLabel(selection.reference)}: ${error instanceof Error ? error.message : String(error)}`, .46);
 			}
 		}
 		try {
@@ -5770,12 +5899,23 @@
 		if (!fileNames.length) return "";
 		try {
 			const input = encodeURIComponent(JSON.stringify({ json: { projectId } }));
-			const response = await fetch(`/fx/api/trpc/flow.projectInitialData?input=${input}`, {
+			const localResponse = await fetch(`/fx/api/trpc/flow.projectInitialData?input=${input}`, {
 				credentials: "include",
 				cache: "no-store"
 			});
-			if (!response.ok) return "";
-			const contents = (await response.json()).result?.data?.json?.projectContents;
+			let body;
+			const localType = localResponse.headers.get("content-type") || "";
+			if (localResponse.ok && /json/i.test(localType)) body = await localResponse.json();
+			else {
+				const relayed = await chrome.runtime.sendMessage({
+					source: "google-flow-adapter",
+					type: "FLOW_PROJECT_INITIAL_DATA",
+					projectId
+				}).catch(() => ({ ok: false }));
+				if (!relayed?.ok) return "";
+				body = relayed.value;
+			}
+			const contents = body.result?.data?.json?.projectContents;
 			const workflows = Array.isArray(contents?.workflows) ? contents.workflows : [];
 			const media = Array.isArray(contents?.media) ? contents.media : [];
 			const matchingWorkflows = workflows.filter((candidate) => {
