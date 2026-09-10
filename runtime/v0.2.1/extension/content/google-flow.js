@@ -2863,6 +2863,7 @@
 		return {
 			aspectRatioSuffix: (aspectRatio) => aspectRatioSuffix$1(runtime, aspectRatio),
 			flowVideoSourceMode: (payload) => flowVideoSourceMode$1(runtime, payload),
+			flowComposerShowsRequestedSource: (payload) => flowComposerShowsRequestedSource(runtime, payload),
 			flowComposerLooksVideoReady: (payload) => flowComposerLooksVideoReady$1(runtime, payload),
 			waitForFlowComposerVideoReady: (payload, timeoutMs = 5e3) => waitForFlowComposerVideoReady$1(runtime, payload, timeoutMs),
 			selectFlowVideoSourceMode: (jobId, payload) => selectFlowVideoSourceMode$1(runtime, jobId, payload),
@@ -2885,12 +2886,16 @@
 		if (/frame|khung/i.test(requested)) return "frames";
 		return "components";
 	}
+	function flowComposerShowsRequestedSource(runtime, payload) {
+		if (!runtime.isVideoJob(payload) || flowVideoSourceMode$1(runtime, payload) === "components") return true;
+		return runtime.flowStartOrEndFrameSlots().length >= 2;
+	}
 	function flowComposerLooksVideoReady$1(runtime, payload) {
 		const { isVideoJob, composerShowsVideoMode, composerShowsAspectRatio, composerShowsDuration, sleep, getComposerRoot, openFlowComposerFromProjectGrid, flowTrace, ensureFlowVideoComposerMode, clickInComposerSettingsBounded, humanPause, flowStartOrEndFrameSlots, visibleText, clickFlowFrameSlot, closeFlowSettingsPanelIfOpen, resolveProviderVideoDuration } = runtime;
 		if (!isVideoJob(payload)) return true;
 		const aspectRatio = String(payload.settings?.aspectRatio || "");
 		const durationSec = Number(payload.settings?.durationSec || 0);
-		return composerShowsVideoMode() && composerShowsAspectRatio(aspectRatio) && composerShowsDuration(durationSec);
+		return composerShowsVideoMode() && composerShowsAspectRatio(aspectRatio) && composerShowsDuration(durationSec) && flowComposerShowsRequestedSource(runtime, payload);
 	}
 	async function waitForFlowComposerVideoReady$1(runtime, payload, timeoutMs = 5e3) {
 		const { isVideoJob, composerShowsVideoMode, composerShowsAspectRatio, composerShowsDuration, sleep, getComposerRoot, openFlowComposerFromProjectGrid, flowTrace, ensureFlowVideoComposerMode, clickInComposerSettingsBounded, humanPause, flowStartOrEndFrameSlots, visibleText, clickFlowFrameSlot, closeFlowSettingsPanelIfOpen, resolveProviderVideoDuration } = runtime;
@@ -2924,7 +2929,17 @@
 				flowTrace(jobId, "Flow V2 frame slots are already present; keeping native frame mode without opening the unavailable source-mode menu.", .17);
 				return missing;
 			}
-			if (!(await clickInComposerSettingsBounded(jobId, "Frame source mode", [/khung hình/i, /^frames?$/i], 1, ["VIDEO_FRAMES"])).ok) flowTrace(jobId, "Flow frame-source control was not visible; continuing with Video tab selected and using the start-frame slot.", .17);
+			if (!(await clickInComposerSettingsBounded(jobId, "Frame source mode", [/khung hình/i, /^frames?$/i], 1, ["VIDEO_FRAMES"])).ok) {
+				flowTrace(jobId, "Flow frame-source control was not visible and no native frame slots were present.", .17);
+				missing.push("Frame source mode");
+			} else {
+				const startedAt = Date.now();
+				while (Date.now() - startedAt < 4e3 && flowStartOrEndFrameSlots().length < 2) await sleep(200);
+				if (flowStartOrEndFrameSlots().length < 2) {
+					flowTrace(jobId, "Flow accepted the frame-source control but did not expose the Bắt đầu/Kết thúc slots.", .17);
+					missing.push("Frame source mode");
+				}
+			}
 		} else if (!(await clickInComposerSettingsBounded(jobId, "Component source mode", [
 			/thành phần/i,
 			/ingredient/i,
