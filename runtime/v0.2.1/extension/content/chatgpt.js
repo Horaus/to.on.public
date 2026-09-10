@@ -835,7 +835,7 @@
 	//#endregion
 	//#region ../../packages/extension-providers/src/chatgpt/content.ts
 	console.log("[Studio] ChatGPT adapter loaded");
-	var ADAPTER_VERSION = "chatgpt-result-baseline-v12+verified-reference-upload-v25+asset-library-reuse+structured-json-tail-recovery-v23+mounted-assistant-v24";
+	var ADAPTER_VERSION = "chatgpt-result-baseline-v12+verified-reference-upload-v22+verified-reference-preview-gate-v25+asset-library-reuse+structured-json-tail-recovery-v23+mounted-assistant-v24";
 	function hasReferenceMedia(reference) {
 		return Boolean(reference.base64 || reference.filePath);
 	}
