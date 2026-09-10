@@ -836,6 +836,9 @@
 	//#region ../../packages/extension-providers/src/chatgpt/content.ts
 	console.log("[Studio] ChatGPT adapter loaded");
 	var ADAPTER_VERSION = "chatgpt-result-baseline-v12+verified-reference-upload-v25+asset-library-reuse+structured-json-tail-recovery-v23+mounted-assistant-v24";
+	function hasReferenceMedia(reference) {
+		return Boolean(reference.base64 || reference.filePath);
+	}
 	function normalizedUiLabel(value) {
 		return value.replace(/\s+/g, " ").trim().toLowerCase();
 	}
@@ -1118,8 +1121,8 @@
 			else {
 				reportStatus(jobId, "opening_provider", "Waiting for previous ChatGPT generation to finish...");
 				await waitForGenerationIdle(12e4);
-				if (payload.references?.some((reference) => reference.base64)) {
-					reportStatus(jobId, "submitting", `Uploading ${payload.references.filter((reference) => reference.base64).length} visual reference(s)...`);
+				if (payload.references?.some(hasReferenceMedia)) {
+					reportStatus(jobId, "submitting", `Uploading ${payload.references.filter(hasReferenceMedia).length} visual reference(s)...`);
 					await uploadReferences(payload.references, jobId);
 				}
 				const baseline = captureBaseline();
@@ -1153,8 +1156,8 @@
 				reportStatus(payload.jobId, "opening_provider", attempt === 1 ? "Waiting for previous ChatGPT generation to finish..." : "Preparing recovered ChatGPT image request...");
 				await waitForGenerationIdle(6e4);
 				const baseline = captureBaseline({ ignoreImages: Boolean(payload.settings?.newConversation || payload.settings?.freshConversationNavigated) });
-				if (payload.references?.some((reference) => reference.base64)) {
-					reportStatus(payload.jobId, "submitting", `Uploading ${payload.references.filter((reference) => reference.base64).length} visual reference(s)...`);
+				if (payload.references?.some(hasReferenceMedia)) {
+					reportStatus(payload.jobId, "submitting", `Uploading ${payload.references.filter(hasReferenceMedia).length} visual reference(s)...`);
 					await uploadReferences(payload.references, payload.jobId);
 				}
 				if (!await submitPrompt(payload.jobId, fullPrompt, {
@@ -1199,12 +1202,12 @@
 		}).length;
 	}
 	async function waitForReferenceUpload(jobId, references, beforeCount) {
-		const expectedCount = references.filter((reference) => reference.base64).length;
+		const expectedCount = references.filter(hasReferenceMedia).length;
 		if (expectedCount === 0) return;
 		const start = Date.now();
 		while (Date.now() - start < 2e4) {
 			if (composerVisualReferenceCount() >= beforeCount + expectedCount) {
-				reportStatus(jobId, "submitting", `Confirmed ${expectedCount} visual reference upload(s).`, void 0, references.filter((reference) => reference.base64).map((reference) => reference.assetId));
+				reportStatus(jobId, "submitting", `Confirmed ${expectedCount} visual reference upload(s).`, void 0, references.filter(hasReferenceMedia).map((reference) => reference.assetId));
 				await sleep(1200);
 				return;
 			}
@@ -1323,7 +1326,7 @@
 		if (seen.size === 0) throw new Error("No image reference data was available to upload.");
 	}
 	async function uploadReferences(references, jobId) {
-		const expectedReferences = references.filter((reference) => reference.base64);
+		const expectedReferences = references.filter(hasReferenceMedia);
 		const initialVisualCount = composerVisualReferenceCount();
 		const attachmentMenuButton = Array.from(document.querySelectorAll("button")).find((element) => {
 			const label = `${element.getAttribute("aria-label") || ""} ${element.textContent || ""}`.toLowerCase();
