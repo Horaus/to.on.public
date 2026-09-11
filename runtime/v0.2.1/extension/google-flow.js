@@ -4234,7 +4234,7 @@
 	async function closeTransientFlowOverlays(jobId) {
 		const overlays = visibleTransientOverlays();
 		if (overlays.length) flowTrace(jobId, `Closing ${overlays.length} transient Flow overlay(s) before continuing.`, .65);
-		for (const overlay of overlays) await closeOverlay(overlay);
+		for (const overlay of overlays) await Promise.race([closeOverlay(overlay), new Promise((resolve) => setTimeout(resolve, 2200))]);
 		const floatingCloseButtons = findFloatingFlowCloseButtons();
 		if (!overlays.length && !floatingCloseButtons.length) return;
 		if (!overlays.length && floatingCloseButtons.length) flowTrace(jobId, `Closing ${floatingCloseButtons.length} floating Flow overlay control(s) before continuing.`, .65);
