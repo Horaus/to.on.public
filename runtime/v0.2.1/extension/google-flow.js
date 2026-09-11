@@ -2983,7 +2983,7 @@
 	async function applyFlowAspectRatio$1(runtime, jobId, aspectRatio) {
 		const { isVideoJob, composerShowsVideoMode, composerShowsAspectRatio, composerShowsDuration, sleep, getComposerRoot, openFlowComposerFromProjectGrid, flowTrace, ensureFlowVideoComposerMode, clickInComposerSettingsBounded, humanPause, flowStartOrEndFrameSlots, visibleText, clickFlowFrameSlot, closeFlowSettingsPanelIfOpen, resolveProviderVideoDuration } = runtime;
 		if (!aspectRatio || composerShowsAspectRatio(aspectRatio)) return void 0;
-		const ratioPattern = new RegExp(`^${aspectRatio.replace(":", "\\s*:\\s*")}$`);
+		const ratioPattern = new RegExp(`(?:^|\\s)(?:crop_[0-9_]+\\s+)?${aspectRatio.replace(":", "\\s*:\\s*")}(?:$|\\s)`, "i");
 		const suffix = aspectRatioSuffix$1(runtime, aspectRatio);
 		return (await clickInComposerSettingsBounded(jobId, `Frame ratio ${aspectRatio}`, [ratioPattern], 1, suffix ? [suffix] : [])).ok ? void 0 : `Frame ratio ${aspectRatio}`;
 	}
