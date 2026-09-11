@@ -4102,14 +4102,14 @@
 	var flowSdkSelectionErrors = /* @__PURE__ */ new Map();
 	function flowMediaIdFromTile(tile) {
 		if (!tile) return "";
-		const explicit = tile.dataset.mediaId || tile.getAttribute("data-media-id") || "";
-		if (/^fe_id_/i.test(explicit)) return explicit;
-		const direct = tile.dataset.tileId || tile.getAttribute("data-tile-id") || "";
-		if (/^fe_id_/i.test(direct)) return direct;
+		const canonicalExplicit = canonicalFlowSdkMediaId(tile.dataset.mediaId || tile.getAttribute("data-media-id") || "");
+		if (canonicalExplicit) return canonicalExplicit;
+		const canonicalDirect = canonicalFlowSdkMediaId(tile.dataset.tileId || tile.getAttribute("data-tile-id") || "");
+		if (canonicalDirect) return canonicalDirect;
 		const image = tile.querySelector("img[src]");
 		if (image?.src) try {
-			const value = new URL(image.src, location.href).searchParams.get("name");
-			if (/^fe_id_/i.test(value || "")) return String(value);
+			const canonicalImage = canonicalFlowSdkMediaId(new URL(image.src, location.href).searchParams.get("name"));
+			if (canonicalImage) return canonicalImage;
 		} catch {}
 		return "";
 	}
