@@ -5199,6 +5199,19 @@
 			startFrameCount: directFrameAttachmentCount()
 		};
 	}
+	async function waitForImmediateFlowSubmitBoundary(button, before, beforeTileIds, timeoutMs = 2400) {
+		const startedAt = Date.now();
+		while (Date.now() - startedAt < timeoutMs) {
+			await sleep(150);
+			if (!button.isConnected) return true;
+			if (button instanceof HTMLButtonElement && button.disabled || button.getAttribute("aria-disabled") === "true") return true;
+			const state = flowSubmitState(button);
+			if (before.slateTextLength > 0 && state.slateTextLength === 0) return true;
+			if (before.startFrameCount > 0 && state.startFrameCount < before.startFrameCount) return true;
+			if (currentTileBaseline().beforeTileIds.some((tileId) => !beforeTileIds.has(tileId))) return true;
+		}
+		return false;
+	}
 	async function clickFlowSubmitButton(jobId, timeoutMs = 8e3) {
 		const startedAt = Date.now();
 		while (Date.now() - startedAt < timeoutMs) {
@@ -5210,11 +5223,12 @@
 			};
 			const button = findFlowSubmitButton();
 			if (button) {
+				const beforeSubmit = flowSubmitState(button);
+				const beforeTileIds = new Set(currentTileBaseline().beforeTileIds);
 				flowTrace(jobId, `Submitting Google Flow via visible composer button (${compactText(visibleText(button), 80)}).`, .7);
 				const center = elementCenter(button);
 				if (!document.querySelector(".ProseMirror") && await requestTobyFlowSubmit()) {
-					await humanPause(900, 1500);
-					return {
+					if (await waitForImmediateFlowSubmitBoundary(button, beforeSubmit, beforeTileIds)) return {
 						attempted: true,
 						ok: true,
 						method: "tobyFlowSubmitBridge",
@@ -5222,8 +5236,7 @@
 					};
 				}
 				if (await requestNativeMouseClick(center.clientX, center.clientY, visibleText(button))) {
-					await humanPause(900, 1500);
-					return {
+					if (await waitForImmediateFlowSubmitBoundary(button, beforeSubmit, beforeTileIds)) return {
 						attempted: true,
 						ok: true,
 						method: "nativeCoordinateClick",
@@ -5232,18 +5245,16 @@
 				}
 				await sleep(500);
 				if (await requestNativeMouseClick(center.clientX, center.clientY, "")) {
-					await humanPause(900, 1500);
-					return {
+					if (await waitForImmediateFlowSubmitBoundary(button, beforeSubmit, beforeTileIds)) return {
 						attempted: true,
 						ok: true,
 						method: "nativeCoordinateClickRetry",
 						...flowSubmitState(button)
 					};
 				}
-				flowTrace(jobId, `Trusted native submit click failed twice; falling back once (no diagnostic).`, .7);
+				flowTrace(jobId, `Trusted native submit produced no observable boundary after two attempts; falling back once (no diagnostic).`, .7);
 				if (await runFlowMainWorldAction("submit")) {
-					await humanPause(900, 1500);
-					return {
+					if (await waitForImmediateFlowSubmitBoundary(button, beforeSubmit, beforeTileIds)) return {
 						attempted: true,
 						ok: true,
 						method: "mainWorldSingleFallback",
@@ -5254,7 +5265,7 @@
 					attempted: false,
 					ok: false,
 					method: "nativeCoordinateClick",
-					error: `Trusted Flow submit click failed: no native diagnostic`,
+					error: `Flow submit produced no observable UI boundary: no native diagnostic`,
 					...flowSubmitState(button)
 				};
 			}
