@@ -457,7 +457,7 @@ function handleNativeClick(deps, message, sender, sendResponse) {
 		});
 		return true;
 	}
-	return respondWithValue(deps.dispatchNativeMouseClick(tabId, x, y, String(message.expectedText || ""), message.confirmIfUnchanged === true), sendResponse);
+	return respondWithValue(deps.dispatchNativeMouseClick(tabId, x, y, String(message.expectedText || ""), message.confirmIfUnchanged === true, message.atMostOnce === true), sendResponse);
 }
 function clickMainWorld(clientX, clientY) {
 	const hit = document.elementFromPoint(clientX, clientY);
@@ -3864,6 +3864,15 @@ async function chatGptPageHasRateLimit$2(tabId) {
 	return result === true;
 }
 //#endregion
+//#region src/background/native-click-policy.ts
+/**
+* A paid/destructive click must never fan out after a timeout: the first
+* transport may have dispatched input before its acknowledgement was lost.
+*/
+async function runAtMostOnceNativeTransport(transports) {
+	return transports[0]();
+}
+//#endregion
 //#region src/background/native-input.ts
 var requestDesktopNativeClick$2;
 var debuggerSessionTails = /* @__PURE__ */ new Map();
@@ -3894,7 +3903,7 @@ async function withDebuggerSession(tabId, operation) {
 		if (debuggerSessionTails.get(tabId) === next) debuggerSessionTails.delete(tabId);
 	}
 }
-async function dispatchDirectCdpClick(tabUrl, x, y) {
+async function dispatchDirectCdpClick(tabUrl, x, y, expectedText = "") {
 	const target = (await fetch("http://127.0.0.1:9222/json/list").then((response) => response.json())).find((candidate) => {
 		if (candidate.type !== "page" || !candidate.webSocketDebuggerUrl || !candidate.url) return false;
 		if (candidate.url === tabUrl) return true;
@@ -3935,17 +3944,27 @@ async function dispatchDirectCdpClick(tabUrl, x, y) {
 		}));
 	});
 	try {
+		const hit = (await command("Runtime.evaluate", {
+			expression: `(() => { const x = ${JSON.stringify(x)}, y = ${JSON.stringify(y)}; const hit = document.elementFromPoint(x, y); const descendants = hit?.querySelectorAll?.("button, [role='button'], [role='option'], [role='menuitem']") || []; const clickable = hit?.closest?.("button, [role='button'], [role='option'], [role='menuitem']") || [...descendants].find((node) => { const rect = node.getBoundingClientRect(); return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom; }); if (!clickable) return null; const rect = clickable.getBoundingClientRect(); return { text: (String(clickable.textContent || "") + " " + String(clickable.getAttribute?.("aria-label") || "") + " " + String(clickable.getAttribute?.("title") || "")).replace(/\\s+/g, " ").trim(), tag: String(clickable.tagName || ""), x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }; })()`,
+			returnByValue: true
+		}))?.result?.value;
+		const expectedKey = expectedText.replace(/\s+/g, "").trim().toLowerCase();
+		const actualText = String(hit?.text || "").replace(/\s+/g, " ").trim();
+		const actualKey = actualText.replace(/\s+/g, "").toLowerCase();
+		if (!hit || expectedKey && (!actualKey || !actualKey.includes(expectedKey) && !expectedKey.includes(actualKey))) throw new Error(`Direct CDP click target changed before press (expected=${expectedText || "any"}, actual=${actualText || "none"}, tag=${hit?.tag || "none"}).`);
+		const pressX = Number(hit.x);
+		const pressY = Number(hit.y);
 		await command("Input.dispatchMouseEvent", {
 			type: "mouseMoved",
-			x,
-			y,
+			x: pressX,
+			y: pressY,
 			button: "none",
 			clickCount: 0
 		});
 		await command("Input.dispatchMouseEvent", {
 			type: "mousePressed",
-			x,
-			y,
+			x: pressX,
+			y: pressY,
 			button: "left",
 			buttons: 1,
 			clickCount: 1
@@ -3953,8 +3972,8 @@ async function dispatchDirectCdpClick(tabUrl, x, y) {
 		await new Promise((resolve) => setTimeout(resolve, 120));
 		await command("Input.dispatchMouseEvent", {
 			type: "mouseReleased",
-			x,
-			y,
+			x: pressX,
+			y: pressY,
 			button: "left",
 			buttons: 0,
 			clickCount: 1
@@ -3976,7 +3995,7 @@ async function focusNativeTab(tabId) {
 }
 async function tryExternalClick(tabUrl, x, y, expectedText, confirmIfUnchanged) {
 	try {
-		await requestDesktopNativeClick$2(tabUrl, x, y, "", confirmIfUnchanged);
+		await requestDesktopNativeClick$2(tabUrl, x, y, expectedText, confirmIfUnchanged);
 		return true;
 	} catch {
 		return false;
@@ -3984,12 +4003,12 @@ async function tryExternalClick(tabUrl, x, y, expectedText, confirmIfUnchanged) 
 }
 async function debuggerHitTarget(target, x, y, expectedText) {
 	const hit = (await chrome.debugger.sendCommand(target, "Runtime.evaluate", {
-		expression: `(() => { const hit = document.elementFromPoint(${JSON.stringify(x)}, ${JSON.stringify(y)}); const clickable = hit?.closest?.("button, [role='button'], [role='option'], [role='menuitem']") || hit; if (!clickable) return null; const rect = clickable.getBoundingClientRect(); return { text: String(clickable.innerText || clickable.getAttribute?.("aria-label") || "").replace(/\\s+/g, " ").trim(), x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }; })()`,
+		expression: `(() => { const x = ${JSON.stringify(x)}, y = ${JSON.stringify(y)}; const hit = document.elementFromPoint(x, y); const descendants = hit?.querySelectorAll?.("button, [role='button'], [role='option'], [role='menuitem']") || []; const clickable = hit?.closest?.("button, [role='button'], [role='option'], [role='menuitem']") || [...descendants].find((node) => { const rect = node.getBoundingClientRect(); return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom; }); if (!clickable) return null; const rect = clickable.getBoundingClientRect(); return { text: (String(clickable.textContent || "") + " " + String(clickable.getAttribute?.("aria-label") || "") + " " + String(clickable.getAttribute?.("title") || "")).replace(/\\s+/g, " ").trim(), x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }; })()`,
 		returnByValue: true
 	}))?.result?.value;
 	const expected = expectedText.replace(/\s+/g, " ").trim().toLowerCase();
 	const actual = String(hit?.text || "").replace(/\s+/g, " ").trim().toLowerCase();
-	if (!hit || expected && !actual.includes(expected) && !expected.includes(actual)) throw new Error(`Native click target changed before press (expected=${expected || "any"}, actual=${actual || "none"}).`);
+	if (!hit || expected && (!actual || !actual.includes(expected) && !expected.includes(actual))) throw new Error(`Native click target changed before press (expected=${expected || "any"}, actual=${actual || "none"}).`);
 	return {
 		x: Number(hit.x),
 		y: Number(hit.y)
@@ -4039,8 +4058,9 @@ async function dispatchDebuggerClick(tabId, x, y, expectedText, confirmIfUnchang
 			const unchangedResult = await chrome.debugger.sendCommand(target, "Runtime.evaluate", {
 				expression: `(() => {
             const hit = document.elementFromPoint(${JSON.stringify(x)}, ${JSON.stringify(y)});
-            const clickable = hit?.closest?.("button, [role='button'], [role='option'], [role='menuitem']") || hit;
-            return String(clickable?.innerText || clickable?.getAttribute?.("aria-label") || "").replace(/\\s+/g, " ").trim();
+            const descendants = hit?.querySelectorAll?.("button, [role='button'], [role='option'], [role='menuitem']") || [];
+            const clickable = hit?.closest?.("button, [role='button'], [role='option'], [role='menuitem']") || [...descendants].find((node) => { const rect = node.getBoundingClientRect(); return ${JSON.stringify(x)} >= rect.left && ${JSON.stringify(x)} <= rect.right && ${JSON.stringify(y)} >= rect.top && ${JSON.stringify(y)} <= rect.bottom; });
+            return clickable ? (String(clickable.textContent || "") + " " + String(clickable.getAttribute?.("aria-label") || "") + " " + String(clickable.getAttribute?.("title") || "")).replace(/\\s+/g, " ").trim() : "";
           })()`,
 				returnByValue: true
 			});
@@ -4052,14 +4072,19 @@ async function dispatchDebuggerClick(tabId, x, y, expectedText, confirmIfUnchang
 		await chrome.debugger.detach(target).catch(() => void 0);
 	}
 }
-async function dispatchNativeMouseClick$2(tabId, x, y, expectedText = "", confirmIfUnchanged = false) {
+async function dispatchNativeMouseClick$2(tabId, x, y, expectedText = "", confirmIfUnchanged = false, atMostOnce = false) {
 	if (!chrome.debugger) throw new Error("Chrome debugger permission is not available.");
 	const tab = await focusNativeTab(tabId);
+	if (atMostOnce) {
+		if (!tab.url) throw new Error("Critical native click has no exact tab URL; no input was dispatched.");
+		await runAtMostOnceNativeTransport([() => requestDesktopNativeClick$2(tab.url, x, y, expectedText, false)]);
+		return { method: "critical-external-at-most-once" };
+	}
 	if (tab.url && await tryExternalClick(tab.url, x, y, expectedText, confirmIfUnchanged)) return { method: "external" };
 	let directError = "";
 	if (tab.url) try {
-		await dispatchDirectCdpClick(tab.url, x, y);
-		return { method: "direct-cdp" };
+		await dispatchDirectCdpClick(tab.url, x, y, expectedText);
+		return { method: "direct-cdp-verified" };
 	} catch (error) {
 		directError = error instanceof Error ? error.message : String(error);
 	}
@@ -4071,9 +4096,9 @@ async function dispatchNativeMouseClick$2(tabId, x, y, expectedText = "", confir
 		};
 	} catch (error) {
 		if (!tab.url) throw error;
-		await dispatchDirectCdpClick(tab.url, x, y);
+		await dispatchDirectCdpClick(tab.url, x, y, expectedText);
 		return {
-			method: "direct-cdp-fallback",
+			method: "direct-cdp-fallback-verified",
 			directError: directError || void 0
 		};
 	}

@@ -1708,7 +1708,7 @@
 		}
 		return null;
 	}
-	async function requestNativeMouseClick$1(clientX, clientY, expectedText = "", confirmIfUnchanged = false) {
+	async function requestNativeMouseClick$1(clientX, clientY, expectedText = "", confirmIfUnchanged = false, atMostOnce = false) {
 		try {
 			const response = await Promise.race([chrome.runtime.sendMessage({
 				source: "google-flow-adapter",
@@ -1716,7 +1716,8 @@
 				x: clientX,
 				y: clientY,
 				expectedText,
-				confirmIfUnchanged
+				confirmIfUnchanged,
+				atMostOnce
 			}), new Promise((_, reject) => setTimeout(() => reject(/* @__PURE__ */ new Error("Native Flow mouse click timed out after 5s.")), 5e3))]);
 			if (response?.ok) {
 				const detail = response.value;
@@ -3402,6 +3403,17 @@
 		const editId = activeDeps.flowTileEditId(tile);
 		const target = tile.querySelector("a[href*=\"/edit/\"], button[aria-label*=\"play\" i], [role=\"button\"][aria-label*=\"play\" i], video, button, [role=\"button\"], img") || tile;
 		activeDeps.flowTrace(jobId, `Revealing Flow result tile ${tile.dataset.tileId || ""} before deciding failure...`, .96, "generating");
+		if (expectVideo && editId) try {
+			sessionStorage.setItem(activeDeps.FLOW_RESULT_RECOVERY_KEY, JSON.stringify({
+				job: {
+					jobId,
+					task: "image_to_video"
+				},
+				savedAt: Date.now(),
+				attempts: 1,
+				editId
+			}));
+		} catch {}
 		activeDeps.simulateClick(target);
 		const startedAt = Date.now();
 		let playbackRequested = false;
@@ -3419,20 +3431,62 @@
 					const playButton = Array.from(document.querySelectorAll("button, [role=\"button\"]")).find((button) => activeDeps.isVisible(button) && /^(?:phát|play)$/i.test(button.getAttribute("aria-label") || ""));
 					if (playButton) {
 						playbackRequested = true;
-						activeDeps.flowTrace(jobId, "Requesting playback once so Flow hydrates the native video resource in the edit route.", .97, "downloading");
-						activeDeps.simulateClick(playButton);
+						activeDeps.flowTrace(jobId, "Requesting trusted playback once so Flow hydrates the native video resource in the edit route.", .97, "downloading");
+						const rect = playButton.getBoundingClientRect();
+						if (!await activeDeps.requestNativeMouseClick(rect.left + rect.width / 2, rect.top + rect.height / 2, playButton.getAttribute("aria-label") || "play")) activeDeps.simulateClick(playButton);
 					}
 				}
 				const performanceAssets = await resultAssetsFromMedia$1(jobId, performance.getEntriesByType("resource").map((entry) => String(entry.name || "")).filter((url) => /\/video\//i.test(url)).map((url) => ({
 					tagName: "VIDEO",
 					currentSrc: url
 				})), true, tile);
-				if (performanceAssets.length > 0) return performanceAssets;
+				if (performanceAssets.length > 0) {
+					sessionStorage.removeItem(activeDeps.FLOW_RESULT_RECOVERY_KEY);
+					return performanceAssets;
+				}
 				const pageAssets = await resultAssetsFromMedia$1(jobId, activeDeps.findElements(activeDeps.SELECTORS.resultMedia).filter(activeDeps.isVisible), expectVideo, tile);
-				if (pageAssets.length > 0) return pageAssets;
+				if (pageAssets.length > 0) {
+					sessionStorage.removeItem(activeDeps.FLOW_RESULT_RECOVERY_KEY);
+					return pageAssets;
+				}
 			}
 		}
 		return [];
+	}
+	async function recoverFlowEditRouteVideo$1(job, editId, timeoutMs = 6e4) {
+		const startedAt = Date.now();
+		let playbackRequested = false;
+		while (Date.now() - startedAt < timeoutMs) {
+			await activeDeps.sleep(750);
+			const urls = performance.getEntriesByType("resource").map((entry) => String(entry.name || "")).filter((url) => /\/video\//i.test(url));
+			const assets = await resultAssetsFromMedia$1(job.jobId, urls.map((url) => ({
+				tagName: "VIDEO",
+				currentSrc: url
+			})), true);
+			if (assets.length > 0) {
+				const flowMediaId = urls[0]?.match(/\/video\/([^?/#]+)/i)?.[1] || "";
+				const attributed = assets.map((asset) => ({
+					...asset,
+					metadata: {
+						...asset.metadata || {},
+						flowMediaId,
+						flowTileId: editId,
+						flowResultUrl: location.href
+					}
+				}));
+				return finishFlowResult$1(job.jobId, attributed, "Recovered the accepted Google Flow video from its exact edit route.");
+			}
+			if (!playbackRequested) {
+				const playButton = Array.from(document.querySelectorAll("button, [role=\"button\"]")).find((button) => activeDeps.isVisible(button) && /^(?:phát|play)$/i.test(button.getAttribute("aria-label") || ""));
+				if (playButton) {
+					playbackRequested = true;
+					const rect = playButton.getBoundingClientRect();
+					await activeDeps.requestNativeMouseClick(rect.left + rect.width / 2, rect.top + rect.height / 2, playButton.getAttribute("aria-label") || "play");
+				}
+			}
+		}
+		activeDeps.reportResult(job.jobId, "failed_retryable", void 0, "The exact Flow edit route loaded, but its native video resource did not hydrate within the bounded recovery window.");
+		return false;
 	}
 	function isImageOnlyVideoReveal(tile, expectVideo) {
 		return expectVideo && activeDeps.flowTileIsImageOnlyResult(tile);
@@ -3624,6 +3678,7 @@
 			normalizeFlowMediaUrl: normalizeFlowMediaUrl$1,
 			resultAssetsFromMedia: resultAssetsFromMedia$1,
 			revealMediaFromFlowTile: revealMediaFromFlowTile$1,
+			recoverFlowEditRouteVideo: recoverFlowEditRouteVideo$1,
 			resultAssetsFromCurrentJobTiles: resultAssetsFromCurrentJobTiles$1,
 			isFreshTileForJob: isFreshTileForJob$1,
 			captureLatestFlowResult: captureLatestFlowResult$1,
@@ -4373,6 +4428,7 @@
 		promptCompareKey,
 		compactText,
 		simulateClick,
+		requestNativeMouseClick,
 		elementCenter,
 		humanPause,
 		setNativeInputValue,
@@ -5228,36 +5284,22 @@
 				flowTrace(jobId, `Submitting Google Flow via visible composer button (${compactText(visibleText(button), 80)}).`, .7);
 				const center = elementCenter(button);
 				if (!document.querySelector(".ProseMirror") && await requestTobyFlowSubmit()) {
-					if (await waitForImmediateFlowSubmitBoundary(button, beforeSubmit, beforeTileIds)) return {
+					const observed = await waitForImmediateFlowSubmitBoundary(button, beforeSubmit, beforeTileIds);
+					return {
 						attempted: true,
-						ok: true,
+						ok: observed,
 						method: "tobyFlowSubmitBridge",
+						error: observed ? void 0 : "Submit transport returned success without an immediate UI boundary; no second submit method was attempted.",
 						...flowSubmitState(button)
 					};
 				}
-				if (await requestNativeMouseClick(center.clientX, center.clientY, visibleText(button))) {
-					if (await waitForImmediateFlowSubmitBoundary(button, beforeSubmit, beforeTileIds)) return {
+				if (await requestNativeMouseClick(center.clientX, center.clientY, visibleText(button), false, true)) {
+					const observed = await waitForImmediateFlowSubmitBoundary(button, beforeSubmit, beforeTileIds);
+					return {
 						attempted: true,
-						ok: true,
+						ok: observed,
 						method: "nativeCoordinateClick",
-						...flowSubmitState(button)
-					};
-				}
-				await sleep(500);
-				if (await requestNativeMouseClick(center.clientX, center.clientY, "")) {
-					if (await waitForImmediateFlowSubmitBoundary(button, beforeSubmit, beforeTileIds)) return {
-						attempted: true,
-						ok: true,
-						method: "nativeCoordinateClickRetry",
-						...flowSubmitState(button)
-					};
-				}
-				flowTrace(jobId, `Trusted native submit produced no observable boundary after two attempts; falling back once (no diagnostic).`, .7);
-				if (await runFlowMainWorldAction("submit")) {
-					if (await waitForImmediateFlowSubmitBoundary(button, beforeSubmit, beforeTileIds)) return {
-						attempted: true,
-						ok: true,
-						method: "mainWorldSingleFallback",
+						error: observed ? void 0 : "Submit transport returned success without an immediate UI boundary; no second submit method was attempted.",
 						...flowSubmitState(button)
 					};
 				}
@@ -5265,7 +5307,7 @@
 					attempted: false,
 					ok: false,
 					method: "nativeCoordinateClick",
-					error: `Flow submit produced no observable UI boundary: no native diagnostic`,
+					error: `Trusted Flow submit transport did not confirm dispatch; no second submit method was attempted: no native diagnostic`,
 					...flowSubmitState(button)
 				};
 			}
@@ -5735,7 +5777,7 @@
 			await handleFlowExecutionError(hydratedPayload, error);
 		}
 	}
-	var { newGenerationTiles, currentJobTiles, flowTileFailed, flowTileHasGenerationSignal, reloadFlowForResultRecovery, waitForGenerationStart, flowTileBlockingError, normalizeFlowMediaUrl, resultAssetsFromMedia, revealMediaFromFlowTile, resultAssetsFromCurrentJobTiles, isFreshTileForJob, captureLatestFlowResult, visibleFlowResultTiles, visibleFlowImageTiles, revealVisibleFlowTileLabels, captureRecoverableVisibleFlowResult, waitForResults, pollFlowResult, handleSettledFlowPoll, recoverSettledFlowVideo, shouldFailSettledVideo, reportLateFlowHydrationStatus, finishFlowResult, recoverLateFlowResult } = createFlowResultRecovery({
+	var { newGenerationTiles, currentJobTiles, flowTileFailed, flowTileHasGenerationSignal, reloadFlowForResultRecovery, waitForGenerationStart, flowTileBlockingError, normalizeFlowMediaUrl, resultAssetsFromMedia, revealMediaFromFlowTile, recoverFlowEditRouteVideo, resultAssetsFromCurrentJobTiles, isFreshTileForJob, captureLatestFlowResult, visibleFlowResultTiles, visibleFlowImageTiles, revealVisibleFlowTileLabels, captureRecoverableVisibleFlowResult, waitForResults, pollFlowResult, handleSettledFlowPoll, recoverSettledFlowVideo, shouldFailSettledVideo, reportLateFlowHydrationStatus, finishFlowResult, recoverLateFlowResult } = createFlowResultRecovery({
 		flowJobBaselines,
 		isVisible,
 		tileMediaUrls,
@@ -6191,7 +6233,8 @@
 	try {
 		const resultRecovery = JSON.parse(sessionStorage.getItem(FLOW_RESULT_RECOVERY_KEY) || "null");
 		sessionStorage.removeItem(FLOW_RESULT_RECOVERY_KEY);
-		if (resultRecovery?.job?.jobId && Date.now() - Number(resultRecovery.savedAt || 0) < 6e4 && /(?:\/tools\/flow\/project\/[^/]+|\/project\/[^/]+)\/?$/i.test(location.pathname)) window.setTimeout(() => {
+		if (resultRecovery?.job?.jobId && Date.now() - Number(resultRecovery.savedAt || 0) < 6e4 && resultRecovery.editId && location.pathname.includes(`/edit/${resultRecovery.editId}`)) window.setTimeout(() => void recoverFlowEditRouteVideo(resultRecovery.job, resultRecovery.editId), 1200);
+		else if (resultRecovery?.job?.jobId && Date.now() - Number(resultRecovery.savedAt || 0) < 6e4 && /(?:\/tools\/flow\/project\/[^/]+|\/project\/[^/]+)\/?$/i.test(location.pathname)) window.setTimeout(() => {
 			const baseline = flowJobBaselines()[resultRecovery.job.jobId];
 			waitForResults(resultRecovery.job, isVideoJob(resultRecovery.job), new Set(baseline?.beforeTileIds || []));
 		}, 3500);
