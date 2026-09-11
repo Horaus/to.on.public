@@ -1076,7 +1076,13 @@
 		if (!button) return null;
 		activeDeps$3.flowTrace(jobId, `Opening Flow composer video controls (${activeDeps$3.compactText(activeDeps$3.visibleText(button), 80)}).`);
 		await activeDeps$3.clickVisibleElement(button);
-		return getComposerSettingsMenu$1();
+		const startedAt = Date.now();
+		while (Date.now() - startedAt < 3500) {
+			const menu = getComposerSettingsMenu$1();
+			if (menu) return menu;
+			await activeDeps$3.sleep(150);
+		}
+		return null;
 	}
 	async function ensureFlowVideoComposerMode$1(jobId) {
 		if (composerShowsVideoMode$1()) {
